@@ -97,6 +97,25 @@ def _loai_nhan(loai: str) -> str:
 
 
 # ------------------------------------------------------- nguồn văn bản
+def _doan_quanh_ten(van_ban: str, ten: str, *, rong: int = 600) -> str:
+    """Các đoạn ±rong ký tự quanh mỗi lần nhắc tên xã (bỏ tiền tố); không nhắc → ''.
+
+    So khớp không dấu nhưng cắt trên văn bản gốc (bo_dau giữ nguyên độ dài chuỗi).
+    """
+    from .text import bo_dau
+
+    ten_rut = re.sub(r"^(Xã|Phường|Đặc khu)\s+", "", ten)
+    goc, tim = bo_dau(van_ban.lower()), bo_dau(ten_rut.lower())
+    khoang: list[list[int]] = []
+    for m in re.finditer(re.escape(tim), goc):
+        a, b = max(0, m.start() - rong), m.end() + rong
+        if khoang and a <= khoang[-1][1]:
+            khoang[-1][1] = b
+        else:
+            khoang.append([a, b])
+    return "\n…\n".join(van_ban[a:b] for a, b in khoang)[:6000]
+
+
 def gom_nguon_van_ban(don_vi: sqlite3.Row | dict, *, so_trang_gov: int = 4) -> list[dict]:
     """Gom văn bản nguồn cho một đơn vị: trang riêng của đơn vị + Wikipedia + báo chí.
 
@@ -130,6 +149,16 @@ def gom_nguon_van_ban(don_vi: sqlite3.Row | dict, *, so_trang_gov: int = 4) -> l
                     "nguon_ma": "govvn", "nguon_ten": f"Chuyên mục {ten}",
                     "url": url, "muc": "A", "van_ban": vb,
                 })
+
+    # 1b) Trang cấp tỉnh khai báo `loai: van_ban` trong config/nguon/<tỉnh>.yaml (danh mục
+    #     di tích, lễ hội…): chỉ lấy đoạn quanh tên xã này để LLM không gán nhầm sang xã khác.
+    for n in cau_hinh.nguon_tinh(dict(don_vi).get("tinh_ma")).get("nguon", []):
+        if n.get("loai") != "van_ban":
+            continue
+        doan = _doan_quanh_ten(trang_xa.doc(n["url"]) or "", ten)
+        if doan:
+            nguons.append({"nguon_ma": n["ma"], "nguon_ten": n.get("ten") or n["ma"],
+                           "url": n["url"], "muc": n.get("muc", "B"), "van_ban": doan})
 
     # 2) Wikipedia (bỏ trang nói về cấp khác, tránh gán nhầm dữ liệu huyện cũ cho xã mới)
     bai = wikipedia.doc_bai(ten, tinh)
@@ -299,8 +328,10 @@ def _boc_llm_hang_loat(cho_llm: list[dict], nguons: list[dict], dung_llm: bool) 
 def khai_thac_don_vi(don_vi: sqlite3.Row | dict, nhom: str, *, cap: str = "xa",
                      dung_llm: bool = True, boi_canh_chung: dict | None = None,
                      nguons: list[dict] | None = None,
-                     llm_da_boc: dict | None = None) -> list[KetQua]:
-    truong_ds = cau_hinh.ds_truong(cap, nhom)
+                     llm_da_boc: dict | None = None,
+                     bo_qua: set[str] = frozenset()) -> list[KetQua]:
+    """bo_qua: trường đã có giá trị đạt từ nguồn có cấu trúc (`khai-thac nguon`) — không bóc lại."""
+    truong_ds = [t for t in cau_hinh.ds_truong(cap, nhom) if t["khoa"] not in bo_qua]
     d = dict(don_vi)
     # Giải mã các cột JSON (danh sách đơn vị cũ, danh sách nguồn)
     for cot in ("don_vi_cu_hop_thanh", "nguon"):
@@ -553,16 +584,21 @@ def chay_tinh(kho: Kho, tinh_ma: str, *, nhom: list[str] | None = None,
             # Gộp mọi trường LLM của các nhóm để gọi LLM MỘT lần cho cả xã
             truong_llm: list[dict] = []
             da_co: set[str] = set()
+            # Trường LLM đã có giá trị đạt hạng A/B (nguồn có cấu trúc, cổng xã) → LLM chỉ lấp chỗ trống
+            khoa_llm = {t["khoa"] for nh in nhom_list for t in cau_hinh.ds_truong("xa", nh)
+                        if t.get("cach_lay") == "llm"}
+            da_co_cau_truc = khoa_llm & kho.truong_da_dat(
+                dv["ma"], muc=("A", "B"), tru_nguon=("nhap_tay_de_xuat", "de_an_sap_xep_hp"))
             for nh in nhom_list:
                 for t in cau_hinh.ds_truong("xa", nh):
-                    if t.get("cach_lay") == "llm" and t["khoa"] not in da_co:
+                    if t.get("cach_lay") == "llm" and t["khoa"] not in da_co | da_co_cau_truc:
                         da_co.add(t["khoa"])
                         truong_llm.append(t)
             llm_da_boc = _boc_llm_hang_loat(truong_llm, nguons, dung_llm) if truong_llm else {}
             kq_xa: list[KetQua] = []
             for nh in nhom_list:
                 kq_xa += khai_thac_don_vi(dv, nh, nguons=nguons, dung_llm=dung_llm,
-                                          llm_da_boc=llm_da_boc)
+                                          llm_da_boc=llm_da_boc, bo_qua=da_co_cau_truc)
         except HetGio:
             # Báo thức cắt ngang Playwright làm hỏng pipe tới driver: gọi close() lúc này
             # là treo vĩnh viễn (EPIPE). Thoát hẳn, script gọi lại sẽ chạy tiếp.

@@ -218,6 +218,15 @@ class Kho:
                     out.setdefault(k, ma)
         return out
 
+    def truong_da_dat(self, don_vi_ma: str, *, muc: tuple[str, ...] = ("A", "B"),
+                      tru_nguon: tuple[str, ...] = ()) -> set[str]:
+        """Các trường của đơn vị đã có giá trị ĐẠT từ nguồn hạng `muc` (bỏ qua `tru_nguon`)."""
+        tru = tru_nguon or ("",)
+        q = ("SELECT DISTINCT truong FROM ket_qua WHERE don_vi_ma = ? AND trang_thai = 'dat'"
+             f" AND nguon_muc IN ({','.join('?' * len(muc))})"
+             f" AND nguon_ma NOT IN ({','.join('?' * len(tru))})")
+        return {r[0] for r in self.conn.execute(q, (don_vi_ma, *muc, *tru))}
+
     def ban_do_ma(self, tinh_ma: str | None = None) -> dict[str, str]:
         """Tên (cũ hoặc mới, có/không tiền tố, đã chuẩn hoá) -> mã xã MỚI của một tỉnh.
 
