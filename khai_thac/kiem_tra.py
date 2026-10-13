@@ -16,6 +16,24 @@ from .text import chuan_hoa
 _NGAY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _EMAIL = re.compile(r"^[\w.+-]+@[\w-]+\.[\w.-]+$")
 _DIEN_THOAI = re.compile(r"^(?:\+84|0)\d{8,10}$")
+# Từ chỉ có trong tiêu đề tin/thông báo, không có trong giá trị thật của trường hồ sơ xã
+_TIN = re.compile(r"hội nghị|tập huấn|thông báo|đối thoại|chỉ đạo|tuyên truyền|triển khai|trao tặng|"
+                  r"niêm yết|tiếp công dân|giao hữu|rộn ràng|đại hội|kỳ họp|tuyên dương|lấy ý kiến|chào cờ",
+                  re.IGNORECASE)
+
+def la_tieu_de_tin(gia_tri, *, xet_chu_hoa: bool = True) -> bool:
+    """Giá trị là tiêu đề tin/câu "không có thông tin" bóc nhầm từ trang chủ cổng xã."""
+    if isinstance(gia_tri, dict):
+        gia_tri = gia_tri.get("ten") or ""
+    if isinstance(gia_tri, list):
+        # Phần tử danh sách (tên làng nghề, lễ hội) hay viết hoa thật → chỉ xét từ khoá
+        return any(la_tieu_de_tin(x, xet_chu_hoa=False) for x in gia_tri)
+    if not isinstance(gia_tri, str) or len(gia_tri) > 300:
+        return False
+    if chuan_hoa(gia_tri).startswith("khong co thong tin") or _TIN.search(gia_tri):
+        return True
+    chu = [c for c in gia_tri if c.isalpha()]
+    return xet_chu_hoa and len(chu) >= 20 and sum(c.isupper() for c in chu) > 0.7 * len(chu)
 
 
 
@@ -40,6 +58,9 @@ def kiem(
         if truong_cfg.get("bat_buoc"):
             return "loi", 0, "Trường bắt buộc nhưng chưa có giá trị", canh_bao
         return "thieu", 0, None, canh_bao
+
+    if la_tieu_de_tin(gia_tri):
+        return "loi", 0, "Tiêu đề tin/thông báo, không phải giá trị của trường", canh_bao
 
     for qt in quy_tac:
         if qt == "khong_rong":

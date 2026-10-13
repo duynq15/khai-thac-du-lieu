@@ -287,6 +287,9 @@ def _boc_quy_tac(truong_cfg: dict, nguons: list[dict], *, ten_don_vi: str | None
     for n in nguons:
         vb = n["van_ban"]
         if khoa == "gioi_thieu":
+            # Trang chủ/chuyên mục cổng xã là danh sách tin → chỉ bóc từ trang giới thiệu
+            if n.get("nguon_ma") == "govvn" and "gioi-thieu" not in n["url"]:
+                continue
             r = quy_tac.boc_gioi_thieu(vb, ten_don_vi)
         elif khoa == "email":
             gt = quy_tac.tim_email(vb)

@@ -307,12 +307,14 @@ class Kho:
         if moi_nhat:
             # Mỗi trường của mỗi đơn vị chỉ lấy MỘT bản ghi tốt nhất: đạt trước, rồi hạng nguồn
             # A>B>C, điểm tin, năm số liệu mới hơn, cuối cùng là lượt mới hơn. Các ứng viên
-            # khác vẫn nằm trong kho cho màn duyệt mâu thuẫn.
+            # khác vẫn nằm trong kho cho màn duyệt mâu thuẫn. Bản ghi 'bo' (đã xác định là rác,
+            # giữ lại để truy vết) không bao giờ được chọn.
             q += (" AND id IN (SELECT id FROM (SELECT id, ROW_NUMBER() OVER ("
                   " PARTITION BY don_vi_ma, nhom, truong ORDER BY"
                   " (trang_thai = 'dat') DESC,"
                   " CASE nguon_muc WHEN 'A' THEN 0 WHEN 'B' THEN 1 WHEN 'C' THEN 2 ELSE 3 END,"
-                  " diem_tin DESC, nam_du_lieu DESC, id DESC) AS hang FROM ket_qua) WHERE hang = 1)")
+                  " diem_tin DESC, nam_du_lieu DESC, id DESC) AS hang FROM ket_qua"
+                  " WHERE trang_thai != 'bo') WHERE hang = 1)")
         q += " ORDER BY don_vi_ten, nhom, id"
         return self.conn.execute(q, p).fetchall()
 

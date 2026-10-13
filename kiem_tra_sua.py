@@ -119,3 +119,13 @@ with tempfile.TemporaryDirectory() as d:
 
 print("OK")
 
+
+# Tiêu đề tin bóc nhầm từ trang chủ cổng xã bị loại; tên thật (kể cả viết hoa trong danh sách) giữ
+from khai_thac.kiem_tra import kiem, la_tieu_de_tin
+assert la_tieu_de_tin("CHỦ TỊCH UBND PHƯỜNG LONG BÌNH CHỈ ĐẠO TRIỂN KHAI CÁC GIẢI PHÁP")
+assert la_tieu_de_tin("Không có thông tin cụ thể về khoa bảng trong văn bản")
+assert la_tieu_de_tin(["KỲ HỌP THỨ 4 HĐND PHƯỜNG AN DƯƠNG", "NHIỆM KỲ 2026 - 2031"])
+assert not la_tieu_de_tin(["LÀNG NGHỀ BÁNH CHƯNG TRUYỀN THỐNG ĐINH XÁ"])
+assert not la_tieu_de_tin([{"ten": "Lễ hội vinh danh làng nghề"}]) and not la_tieu_de_tin("Nguyễn Văn An")
+assert kiem({"kiem_tra": []}, "THÔNG BÁO NIÊM YẾT DANH SÁCH")[0] == "loi"
+print("OK tiêu đề tin")
