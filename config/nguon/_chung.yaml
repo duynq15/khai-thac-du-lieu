@@ -12,6 +12,7 @@ nguon:
     dien_tich_km2: area_km2
     dan_so: population
     tru_so: hq_address
+    ranh_gioi_vi_tri: [centroid_lat, centroid_lng]
   nhom: hanh_chinh_dan_cu
   muc: B
   nam: 2025

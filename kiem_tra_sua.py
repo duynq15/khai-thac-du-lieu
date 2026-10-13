@@ -72,6 +72,18 @@ with tempfile.TemporaryDirectory() as d:
     assert kho.truong_da_dat("19996") == {"dien_tich_km2", "dan_so"}
     assert not kho.truong_da_dat("20350")                               # không lan sang tỉnh khác
 
+    # Nhiều cột → một trường toa_do {lat, lon}
+    import json, khai_thac.http as _http
+    du_lieu_json = {"data": [{"code": "19996", "centroid_lat": 16.4, "centroid_lng": 107.6}]}
+    _http.goi = lambda url, **k: type("R", (), {"status_code": 200, "text": "",
+                                                "json": lambda self=None: du_lieu_json})()
+    bang.nap(kho, {"ma": "t_toa_do", "loai": "bang", "dinh_dang": "json", "url": "http://x/{tinh_ma}",
+                   "duong_dan": "data", "khoa_xa": {"ma": "code"},
+                   "cot": {"ranh_gioi_vi_tri": ["centroid_lat", "centroid_lng"]}, "muc": "B"}, "46")
+    toa_do = kho.lay_ket_qua(don_vi_ma="19996", nhom="thong_tin_chung")
+    assert [(json.loads(x["gia_tri"]), x["kieu"]) for x in toa_do if x["truong"] == "ranh_gioi_vi_tri"] \
+        == [({"lat": 16.4, "lon": 107.6}, "toa_do")]
+
 # Cổng xã theo mẫu của tỉnh; tỉnh chưa cấu hình → không đoán bừa
 assert trang_xa._doan_theo_mau({"ma": "x", "ten": "Phường Vỹ Dạ", "loai": "phuong", "tinh_ma": "46"}) \
     == ["https://vyda.hue.gov.vn"]

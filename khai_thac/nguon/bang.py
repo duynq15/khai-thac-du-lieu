@@ -116,17 +116,25 @@ def nap(kho: Kho, cfg: dict, tinh_ma: str) -> dict:
             khong_khop.append(str(d.get(next(iter(cfg["khoa_xa"].values())))))
             continue
         for truong, cot in cfg["cot"].items():
-            gt = d.get(cot)
-            if kieu.get(truong) == "so":
-                gt = _so(gt)
+            if isinstance(cot, (list, tuple)):   # nhiều cột → một trường toa_do {lat, lon}
+                gt = {"lat": _so(d.get(cot[0])), "lon": _so(d.get(cot[1]))}
+                gt = gt if None not in gt.values() else None
+            else:
+                gt = d.get(cot)
+                if kieu.get(truong) == "so":
+                    gt = _so(gt)
             if gt in (None, "", [], {}):
                 continue
+            if isinstance(gt, dict):
+                trich = f"{', '.join(cot)} = {gt['lat']}, {gt['lon']}"
+            else:
+                trich = f"{cot} = {d.get(cot)}"
             ket.append(KetQua(
                 don_vi_ma=ma, don_vi_ten=xa[ma]["ten"], cap="xa",
                 nhom=cfg.get("nhom") or nhom_cua.get(truong, "khac"), truong=truong,
                 gia_tri=gt, kieu=kieu.get(truong, "van_ban"),
                 nguon_ma=cfg["ma"], nguon_ten=cfg.get("ten") or cfg["ma"], nguon_url=url,
-                nguon_muc=cfg.get("muc", "C"), trich_doan=f"{cot} = {d.get(cot)}",
+                nguon_muc=cfg.get("muc", "C"), trich_doan=trich,
                 diem_tin={"A": 90, "B": 75}.get(cfg.get("muc"), 60), trang_thai=DAT,
                 nam_du_lieu=cfg.get("nam"),
             ))
