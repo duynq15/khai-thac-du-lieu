@@ -186,3 +186,20 @@ def so_lieu_tinh(ma: str) -> dict:
                 "so_don_vi_hanh_chinh": t.get("ward_count"),
             }
     return _TINH.get(ma, {})
+
+# ------------------------------------------------- căn cứ pháp lý từng xã (NQ UBTVQH sắp xếp cấp xã)
+_NQ_XA: dict[str, dict] = {}
+_DA_NAP_NQ: set[str] = set()
+
+def nq_xa(ma_xa: str, tinh_ma: str | None) -> dict:
+    """{number, title, date, effective_date, url} của NQ UBTVQH thành lập xã (tinhthanhpho legal_refs)."""
+    if tinh_ma and tinh_ma not in _DA_NAP_NQ:
+        _DA_NAP_NQ.add(tinh_ma)
+        for w in (json_goi(f"{TINHTHANHPHO}/new-provinces/{tinh_ma}/wards", params={"limit": 500}) or {}).get("data", []):
+            if w.get("legal_refs"):
+                _NQ_XA[str(w["code"])] = w["legal_refs"][0]
+    return _NQ_XA.get(ma_xa, {})
+
+def ten_don_vi_cu(ma_xa: str) -> list[str]:
+    """Tên đơn vị cũ theo open-api to-legacies — dự phòng khi 34tinhthanh không liệt kê."""
+    return [c["name"] for c in json_goi(f"{OPEN_API}/w/{int(ma_xa)}/to-legacies/") or []]

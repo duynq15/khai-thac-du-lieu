@@ -269,16 +269,42 @@ def _tu_danh_muc(truong: str, don_vi: sqlite3.Row | dict):
     if truong == "truc_thuoc_tinh":
         return d["tinh_ten"]
     if truong in ("ngay_thanh_lap", "ngay_hieu_luc"):
-        return d.get("ngay_hieu_luc")
+        return danh_muc.nq_xa(d["ma"], d.get("tinh_ma")).get("effective_date") or d.get("ngay_hieu_luc")
     if truong in ("don_vi_cu_hop_thanh",):
-        return d.get("don_vi_cu_hop_thanh") or []
+        return _don_vi_cu(d)
     if truong == "don_vi_cu_chi_tiet":
-        return danh_muc.chi_tiet_don_vi_cu(d["ma"], d.get("don_vi_cu_hop_thanh") or []) or None
+        return danh_muc.chi_tiet_don_vi_cu(d["ma"], _don_vi_cu(d)) or None
     if truong == "so_don_vi_cu":
-        return d.get("so_don_vi_cu")
+        return len(_don_vi_cu(d)) or None
     if truong == "can_cu_phap_ly":
+        nq = danh_muc.nq_xa(d["ma"], d.get("tinh_ma"))
+        if nq.get("number"):
+            return f"Nghị quyết {nq['number']} ngày {_ngay_vn(nq.get('date'))}: {nq.get('title') or ''}".strip(": ")
         return d.get("can_cu_phap_ly")
     return None
+
+def _ngay_vn(iso: str | None) -> str:
+    return "/".join(reversed(iso.split("-"))) if iso else ""
+
+def _don_vi_cu(d: dict) -> list[str]:
+    """Đơn vị cũ theo 34tinhthanh; xã nào 34tinhthanh bỏ trống thì lấy open-api to-legacies."""
+    return d.get("don_vi_cu_hop_thanh") or danh_muc.ten_don_vi_cu(d["ma"])
+
+def _url_danh_muc(truong: str, d: dict) -> str | None:
+    """URL nguồn gốc của một trường lấy từ danh mục — để cán bộ mở đúng chỗ đối chiếu."""
+    if not str(d["ma"]).isdigit():  # thôn: mã tự sinh, không có bản ghi trên API
+        return None
+    if d.get("loai") in ("tinh", "thanh_pho"):
+        return f"{danh_muc.OPEN_API}/p/{int(d['ma'])}"
+    if truong in ("can_cu_phap_ly", "ngay_thanh_lap", "ngay_hieu_luc"):
+        return danh_muc.nq_xa(d["ma"], d.get("tinh_ma")).get("url")
+    if truong in ("don_vi_cu_hop_thanh", "so_don_vi_cu"):
+        if d.get("don_vi_cu_hop_thanh"):
+            return f"{danh_muc.TINHTHANH34}/wards?province_code={d.get('tinh_ma')}"
+        return f"{danh_muc.OPEN_API}/w/{int(d['ma'])}/to-legacies/"
+    if truong == "don_vi_cu_chi_tiet":
+        return f"{danh_muc.OPEN_API}/w/{int(d['ma'])}/to-legacies/"
+    return f"{danh_muc.OPEN_API}/w/{int(d['ma'])}"
 
 
 def _boc_quy_tac(truong_cfg: dict, nguons: list[dict], *, ten_don_vi: str | None = None):
@@ -493,7 +519,7 @@ def khai_thac_don_vi(don_vi: sqlite3.Row | dict, nhom: str, *, cap: str = "xa",
             gia_tri=gia_tri, kieu=t.get("kieu", "van_ban"),
             nguon_ma=(nguon or {}).get("nguon_ma") or ("danh_muc" if tu_danh_muc is not None else None),
             nguon_ten=(nguon or {}).get("nguon_ten") or ("Danh mục ĐVHC" if tu_danh_muc is not None else None),
-            nguon_url=(nguon or {}).get("url"),
+            nguon_url=(nguon or {}).get("url") or (_url_danh_muc(khoa, d) if tu_danh_muc is not None else None),
             nguon_muc=(nguon or {}).get("muc") or ("A" if tu_danh_muc is not None else None),
             trich_doan=trich, diem_tin=diem, trang_thai=trang_thai if trang_thai in (DAT, LOI) else THIEU,
             ly_do_loi=ly_do, canh_bao=canh_bao, nam_du_lieu=(nguon or {}).get("nam"),
