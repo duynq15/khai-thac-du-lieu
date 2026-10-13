@@ -33,8 +33,54 @@ assert {"cac_xom", "anh_thon"} <= khoa("thon", "thong_tin_chung")
 trinh_duyet.tat()
 assert not trinh_duyet.san_sang()
 assert MA_THOAT_KHOI_DONG_LAI == 75
-for sh in ("dieu-phoi.sh", "chay-qua-dem.sh", "chay-mot-tinh.sh"):
+for sh in ("dieu-phoi.sh",):
     s = open(sh, encoding="utf-8").read()
     assert '"$rc" -ne 75' in s and "--khong-trinh-duyet" in s, sh
+
+# --- refactor nguồn theo tỉnh ---
+import tempfile
+from pathlib import Path
+
+from khai_thac.models import DonVi
+from khai_thac.nguon import bang, trang_xa
+from khai_thac.quy_trinh import _doan_quanh_ten
+from khai_thac.store import Kho
+
+with tempfile.TemporaryDirectory() as d:
+    kho = Kho(Path(d) / "t.sqlite")
+    # Tên trùng giữa 2 tỉnh: phải ra đúng mã theo tỉnh
+    kho.ghi_don_vi([DonVi("19996", "Phường Hương Trà", "phuong", tinh_ma="46"),
+                    DonVi("20350", "Phường Hương Trà", "phuong", tinh_ma="48"),
+                    DonVi("00454", "Xã Đông Anh", "xa", tinh_ma="01",
+                          don_vi_cu_hop_thanh=["Xã Uy Nỗ (phần còn lại sau khi sáp nhập vào xã Thư Lâm)"])])
+    assert Kho.tim_ma_xa(kho.ban_do_ma("46"), "Hương Trà") == "19996"
+    assert Kho.tim_ma_xa(kho.ban_do_ma("48"), "Phường Hương Trà") == "20350"
+    assert Kho.tim_ma_xa(kho.ban_do_ma("01"), "Uy Nỗ") == "00454"   # tên cũ -> xã mới
+
+    # Nguồn bang: bảng HTML ghép theo tên, số kiểu Việt
+    html = ("<table><tr><th>STT</th><th>Tên đơn vị</th><th>Diện tích (km²)</th><th>Dân số</th></tr>"
+            "<tr><td>1</td><td>Phường Hương Trà</td><td>48,68</td><td>118.183</td></tr>"
+            "<tr><td>2</td><td>Xã Không Có</td><td>1</td><td>2</td></tr></table>")
+    import khai_thac.nguon.bang as b
+    b.goi = lambda url, **k: type("R", (), {"status_code": 200, "text": html})()
+    r = bang.nap(kho, {"ma": "t_bang", "loai": "bang", "dinh_dang": "html", "url": "http://x/{tinh_ma}",
+                       "khoa_xa": {"ten": "Tên đơn vị"}, "cot": {"dien_tich_km2": "Diện tích", "dan_so": "Dân số"},
+                       "muc": "A"}, "46")
+    assert r["so_xa"] == 1 and r["khong_khop"] == ["Xã Không Có"], r
+    gt = {x["truong"]: x["gia_tri"] for x in kho.lay_ket_qua(don_vi_ma="19996")}
+    assert gt == {"dien_tich_km2": "48.68", "dan_so": "118183"}, gt
+    assert kho.truong_da_dat("19996") == {"dien_tich_km2", "dan_so"}
+    assert not kho.truong_da_dat("20350")                               # không lan sang tỉnh khác
+
+# Cổng xã theo mẫu của tỉnh; tỉnh chưa cấu hình → không đoán bừa
+assert trang_xa._doan_theo_mau({"ma": "x", "ten": "Phường Vỹ Dạ", "loai": "phuong", "tinh_ma": "46"}) \
+    == ["https://vyda.hue.gov.vn"]
+assert trang_xa._doan_theo_mau({"ma": "x", "ten": "Xã A", "loai": "xa", "tinh_ma": "99"}) == []
+assert bang._so("198.59") == 198.59 and bang._so("118.183") == 118183 and bang._so("48,68") == 48.68
+
+# Trang cấp tỉnh: chỉ đoạn quanh tên xã
+vb = "x" * 900 + " Đình Cổ Loa thuộc xã Đông Anh. " + "y" * 900 + " xã Thư Lâm."
+d = _doan_quanh_ten(vb, "Xã Đông Anh", rong=100)
+assert "Cổ Loa" in d and "Thư Lâm" not in d and _doan_quanh_ten(vb, "Xã Mê Linh") == ""
 
 print("OK")

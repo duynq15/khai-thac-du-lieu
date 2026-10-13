@@ -292,6 +292,7 @@ class Kho:
     def lay_ket_qua(self, *, don_vi_ma: str | None = None, nhom: str | None = None,
                     trang_thai: str | None = None, luot_ma: str | None = None,
                     moi_nhat: bool = False) -> list[sqlite3.Row]:
+        """moi_nhat=True: mỗi (đơn vị, nhóm, trường) chỉ một bản ghi tốt nhất (xem dưới)."""
         q = "SELECT * FROM ket_qua WHERE 1=1"
         p: list = []
         for cot, gia in (("don_vi_ma", don_vi_ma), ("nhom", nhom),
@@ -300,9 +301,14 @@ class Kho:
                 q += f" AND {cot} = ?"
                 p.append(gia)
         if moi_nhat:
-            # Mỗi trường của mỗi đơn vị chỉ lấy bản ghi mới nhất, tránh trùng giữa các lượt
-            q += (" AND id IN (SELECT MAX(id) FROM ket_qua"
-                  " GROUP BY don_vi_ma, nhom, truong)")
+            # Mỗi trường của mỗi đơn vị chỉ lấy MỘT bản ghi tốt nhất: đạt trước, rồi hạng nguồn
+            # A>B>C, điểm tin, năm số liệu mới hơn, cuối cùng là lượt mới hơn. Các ứng viên
+            # khác vẫn nằm trong kho cho màn duyệt mâu thuẫn.
+            q += (" AND id IN (SELECT id FROM (SELECT id, ROW_NUMBER() OVER ("
+                  " PARTITION BY don_vi_ma, nhom, truong ORDER BY"
+                  " (trang_thai = 'dat') DESC,"
+                  " CASE nguon_muc WHEN 'A' THEN 0 WHEN 'B' THEN 1 WHEN 'C' THEN 2 ELSE 3 END,"
+                  " diem_tin DESC, nam_du_lieu DESC, id DESC) AS hang FROM ket_qua) WHERE hang = 1)")
         q += " ORDER BY don_vi_ten, nhom, id"
         return self.conn.execute(q, p).fetchall()
 

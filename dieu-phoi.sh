@@ -28,6 +28,10 @@ log "=== ĐIỀU PHỐI QUA ĐÊM · ${N} luồng · ưu tiên: $DS ==="
 [ -z "${BRAVE_API_KEY:-}" ] && log "⚠ Thiếu BRAVE_API_KEY"
 
 for T in $DS; do
+  # ---- PHA 0: NGUỒN CÓ CẤU TRÚC (config/nguon/<T>.yaml + _chung.yaml) — rẻ, chạy trước ----
+  log "### $T · PHA 0 (nguồn có cấu trúc)"
+  timeout 3600 uv run khai-thac nguon --tinh-ma "$T" >> "logs/t$T-nguon.log" 2>&1 || true
+
   # ---- PHA A: CÀO (nóng cache) ----
   log "### $T · PHA A (cào, $N luồng)"
   for k in $(seq 0 $((N - 1))); do
@@ -47,16 +51,11 @@ for T in $DS; do
   log "  ✓ xong A+B tỉnh $T — $(uv run khai-thac thong-ke --tinh-ma "$T" 2>/dev/null | sed -n '2p')"
 done
 
-# ---- PHA C: OCOP + Thôn ----
-log "### PHA C — OCOP + Thôn"
+# ---- PHA C: Thôn (OCOP/adapter đã chạy ở PHA 0 qua config/nguon) ----
+log "### PHA C — Thôn"
 for T in $DS; do
-  timeout 1800 uv run khai-thac nongsan --tinh-ma "$T" >> "logs/t$T-ocop.log" 2>&1 || true
   timeout 1800 uv run khai-thac thon --tinh-ma "$T" --xuat >> "logs/t$T-thon.log" 2>&1 || true
 done
-# OCOP từ tin công bố (Đà Nẵng có bài ghép được SP ↔ xã)
-timeout 600 uv run khai-thac ocop-news --tinh-ma 48 \
-  --url "https://danang.gov.vn/vi/w/18-san-pham-ocop-duoc-trao-giay-chung-phan-hang-4-sao-va-3-sao-i" \
-  >> "logs/t48-ocop.log" 2>&1 || true
 
 # ---- XUẤT ----
 log "### XUẤT bàn giao"
@@ -66,7 +65,7 @@ uv run khai-thac xuat --dinh-dang json  >> "$DIEU_PHOI_LOG" 2>&1
 # ---- BÁO CÁO SÁNG ----
 {
   echo "════════ BÁO CÁO SÁNG · $(date '+%Y-%m-%d %H:%M') ════════"
-  echo "Ưu tiên: 31 Hải Phòng · 01 Hà Nội · 48 Đà Nẵng · 79 HCM · 92 Cần Thơ · 46 Huế"
+  echo "Danh sách: $DS"
   echo
   echo "── Tổng quan toàn quốc ──"
   uv run khai-thac thong-ke 2>/dev/null | tail -40

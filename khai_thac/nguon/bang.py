@@ -61,11 +61,13 @@ def _dong_bang(cfg: dict, tinh_ma: str) -> list[dict]:
 
     url = cfg["url"].format(tinh_ma=tinh_ma)
     if cfg["dinh_dang"] == "html":
-        import pandas as pd
+        from bs4 import BeautifulSoup
 
         r = goi(url, timeout=60.0)
-        bang = [{"rows": [list(map(str, df.columns))] + df.astype(str).values.tolist()}
-                for df in pd.read_html(r.text)] if r is not None and r.status_code == 200 else []
+        soup = BeautifulSoup(r.text, "lxml") if r is not None and r.status_code == 200 else None
+        # ponytail: không xử lý rowspan/colspan; bảng gộp ô thì khai báo dinh_dang pdf/xlsx bản gốc
+        bang = [{"rows": [[o.get_text(" ", strip=True) for o in tr.find_all(["td", "th"])]
+                          for tr in t.find_all("tr")]} for t in (soup.find_all("table") if soup else [])]
     else:
         r = goi(url, timeout=120.0)
         if r is None or r.status_code != 200:

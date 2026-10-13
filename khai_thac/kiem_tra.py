@@ -17,11 +17,6 @@ _NGAY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _EMAIL = re.compile(r"^[\w.+-]+@[\w-]+\.[\w.-]+$")
 _DIEN_THOAI = re.compile(r"^(?:\+84|0)\d{8,10}$")
 
-# Bounding box thô của một số tỉnh lớn để kiểm "trong tỉnh"; thiếu thì bỏ qua.
-BBOX_TINH = {
-    "Hà Nội": (20.5, 21.5, 105.2, 106.1),
-    "Hải Phòng": (20.5, 21.3, 106.3, 107.5),
-}
 
 
 def _diem_tru(diem: int, tru: int) -> int:
@@ -103,8 +98,9 @@ def kiem(
                     return "loi", 0, f"Toạ độ ngoài lãnh thổ: {gia_tri}", canh_bao
 
         elif qt == "trong_tinh":
+            # bbox khai báo trong config/nguon/<tỉnh>.yaml; tỉnh chưa khai báo thì bỏ qua
             tinh = boi_canh.get("tinh_ten", "")
-            bb = BBOX_TINH.get(tinh)
+            bb = boi_canh.get("bbox")
             if bb and isinstance(gia_tri, dict) and "lat" in gia_tri:
                 lat0, lat1, lon0, lon1 = bb
                 if not (lat0 <= float(gia_tri["lat"]) <= lat1 and lon0 <= float(gia_tri["lon"]) <= lon1):

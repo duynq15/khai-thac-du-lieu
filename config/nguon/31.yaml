@@ -30,7 +30,7 @@ nguon:
   cach_lay: html
   xac_minh: 200
   uu_tien: 1
-  ghi_chu: nguồn chuẩn thay cho dữ liệu gõ tay trong chuyen_sau.py
+  ghi_chu: nguồn chuẩn thay cho dữ liệu Hải Phòng gõ tay trước đây
   loai: van_ban
 - ma: hp_nq1669_cp
   ten: NQ 1669 (Chinhphu)

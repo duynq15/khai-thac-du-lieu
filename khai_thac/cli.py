@@ -9,7 +9,7 @@ from . import cau_hinh
 from . import http as http_mod
 from .models import KetQua
 from .proxy import PoolProxy, kiem_tra_hang_loat, tai_proxy
-from .quy_trinh import chay_danh_muc, chay_nhom, chay_thon, chay_tinh
+from .quy_trinh import chay_danh_muc, chay_thon, chay_tinh
 from .store import Kho
 from .trich_xuat import ollama
 from .xuat import xuat_excel, xuat_json
@@ -62,45 +62,47 @@ def cmd_danh_muc(args) -> int:
     return 0
 
 
-def cmd_xa(args) -> int:
+def _chia(shard: str | None) -> tuple[int, int] | None:
+    """'K/N' -> (N, K); sai dạng -> SystemExit."""
+    if not shard:
+        return None
+    try:
+        k, n = shard.split("/")
+        return int(n), int(k)
+    except ValueError:
+        raise SystemExit("--shard phải dạng K/N, ví dụ 1/6") from None
+
+
+def _chay(args, *, tinh_ma: str | None, nhom: list[str] | None) -> int:
+    """Chung cho `xa` và `tinh`: một vòng khai thác (quy_trinh.chay_tinh) + xuất."""
     kho = _kho(args)
-    if not args.nhom:
-        print("Cần --nhom. Các nhóm ở cấp xã:", ", ".join(cau_hinh.ds_nhom("xa")))
-        return 2
+    if getattr(args, "khong_trinh_duyet", False):
+        from .nguon import trinh_duyet
 
+        trinh_duyet.tat()
     bo_qua = bool(cau_hinh.lay_ho_so("lo", "bo_qua_da_co", mac_dinh=True)) and not args.lam_lai
-    so_moi_lo = int(cau_hinh.lay_ho_so("lo", "so_don_vi_moi_lo", mac_dinh=0) or 0)
-    nghi = float(cau_hinh.lay_ho_so("lo", "nghi_giua_lo_giay", mac_dinh=0) or 0)
-
-    pham_vi = "toàn quốc" if args.toan_quoc or (not args.ten and not args.ma and not args.tinh) else (
-        args.ten or args.ma or args.tinh)
-    print(f"Khai thác nhóm '{args.nhom}' · phạm vi: {pham_vi} · LLM={'bật' if args.dung_llm else 'tắt'}"
-          + (" · chạy tiếp (bỏ đơn vị đã đạt)" if bo_qua else ""))
-
-    chia = None
-    if args.shard:
-        try:
-            k, n = args.shard.split("/")
-            chia = (int(n), int(k))
-        except ValueError:
-            print("--shard phải dạng K/N, ví dụ 1/6")
-            return 2
-
-    ds_nhom = [x.strip() for x in args.nhom.split(",") if x.strip()]
-    kq: list = []
-    for nh in ds_nhom:
-        kq += chay_nhom(kho, nh, ten=args.ten, ma=args.ma, tinh=args.tinh,
-                        cap=args.cap, dung_llm=args.dung_llm, bo_qua_da_co=bo_qua,
-                        gioi_han=args.gioi_han, so_moi_lo=so_moi_lo, nghi_giua_lo=nghi,
-                        chia=chia, tinh_ma=args.tinh_ma)
-    if args.xuat:
-        if "json" in args.xuat:
-            print("JSON:", xuat_json(kq))
-        if "excel" in args.xuat:
-            print("Excel:", xuat_excel(kq))
+    pham_vi = getattr(args, "ma", None) if args.fn is cmd_xa else None
+    print(f"Khai thác {pham_vi or getattr(args, 'ten', None) or (f'tỉnh {tinh_ma}' if tinh_ma else 'toàn quốc')}"
+          f" · nhóm {nhom or 'tất cả'} · LLM={'bật' if args.dung_llm else 'tắt'}"
+          + (f" · shard {args.shard}" if args.shard else "") + (" · chạy tiếp" if bo_qua else " · làm lại"))
+    kq = chay_tinh(
+        kho, tinh_ma, nhom=nhom, chia=_chia(args.shard), gioi_han=args.gioi_han,
+        dung_llm=args.dung_llm, bo_qua_da_co=bo_qua,
+        so_moi_lo=int(cau_hinh.lay_ho_so("lo", "so_don_vi_moi_lo", mac_dinh=0) or 0),
+        nghi_giua_lo=float(cau_hinh.lay_ho_so("lo", "nghi_giua_lo_giay", mac_dinh=0) or 0),
+        ma=pham_vi, ten=getattr(args, "ten", None), tinh_ten=getattr(args, "tinh", None),
+        cap=getattr(args, "cap", "xa"),
+    )
+    for dd in args.xuat or []:
+        print(dd.upper() + ":", {"json": xuat_json, "excel": xuat_excel}[dd](kq))
     print(f"Xong: {len(kq)} trường, {sum(1 for k in kq if k.trang_thai == 'dat')} đạt.")
     kho.dong()
     return 0
+
+
+def cmd_xa(args) -> int:
+    nhom = [x.strip() for x in args.nhom.split(",") if x.strip()]
+    return _chay(args, tinh_ma=args.tinh_ma, nhom=nhom)
 
 
 def cmd_xuat(args) -> int:
@@ -167,39 +169,8 @@ def cmd_tien_do(args) -> int:
 
 
 def cmd_tinh(args) -> int:
-    kho = _kho(args)
     nhom = None if args.nhom in (None, "all") else [x.strip() for x in args.nhom.split(",")]
-    chia = None
-    if args.shard:
-        try:
-            k, n = args.shard.split("/")
-            chia = (int(n), int(k))
-        except ValueError:
-            print("--shard phải dạng K/N, ví dụ 1/4")
-            return 2
-
-    if args.khong_trinh_duyet:
-        from .nguon import trinh_duyet
-
-        trinh_duyet.tat()
-
-    so_moi_lo = int(cau_hinh.lay_ho_so("lo", "so_don_vi_moi_lo", mac_dinh=0) or 0)
-    nghi = float(cau_hinh.lay_ho_so("lo", "nghi_giua_lo_giay", mac_dinh=0) or 0)
-    print(f"Cào tỉnh {args.ma}: nhóm {nhom or 'tất cả'} · "
-          + (f"shard {args.shard} · " if chia else "")
-          + ("chạy tiếp" if not args.lam_lai else "làm lại"))
-
-    kq = chay_tinh(kho, args.ma, nhom=nhom, chia=chia, gioi_han=args.gioi_han,
-                   dung_llm=args.dung_llm, bo_qua_da_co=not args.lam_lai,
-                   so_moi_lo=so_moi_lo, nghi_giua_lo=nghi)
-    if args.xuat:
-        if "json" in args.xuat:
-            print("JSON:", xuat_json(kq))
-        if "excel" in args.xuat:
-            print("Excel:", xuat_excel(kq))
-    print(f"Xong: {len(kq)} trường, {sum(1 for k in kq if k.trang_thai == 'dat')} đạt.")
-    kho.dong()
-    return 0
+    return _chay(args, tinh_ma=args.ma, nhom=nhom)
 
 
 def cmd_thong_ke(args) -> int:
@@ -364,9 +335,10 @@ def tao_parser() -> argparse.ArgumentParser:
     x.add_argument("--tinh-ma", dest="tinh_ma", help="Lọc theo mã tỉnh (vd 01 = Hà Nội)")
     x.add_argument("--cap", default="xa", choices=["xa", "tinh", "thon"])
     x.add_argument("--nhom", required=True, help="Nhóm dữ liệu, vd thong_tin_chung")
-    x.add_argument("--toan-quoc", action="store_true", help="Chạy mọi xã/phường trong kho")
+    x.add_argument("--toan-quoc", action="store_true", help="Chạy mọi xã/phường trong kho (mặc định khi không lọc)")
     x.add_argument("--gioi-han", type=int, default=None, help="Chỉ chạy N đơn vị đầu (chạy thử)")
     x.add_argument("--lam-lai", action="store_true", help="Bỏ qua trạng thái đã đạt, làm lại từ đầu")
+    x.add_argument("--khong-trinh-duyet", action="store_true", help="Không mở Chrome (chỉ cache + HTTP tĩnh)")
     x.add_argument("--shard", help="Chia việc cho nhiều tiến trình, dạng K/N (vd 1/6)")
     x.add_argument("--dung-llm", dest="dung_llm", action="store_true", default=True)
     x.add_argument("--khong-llm", dest="dung_llm", action="store_false")

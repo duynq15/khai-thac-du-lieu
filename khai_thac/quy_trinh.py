@@ -341,7 +341,9 @@ def khai_thac_don_vi(don_vi: sqlite3.Row | dict, nhom: str, *, cap: str = "xa",
                 d[cot] = _json.loads(d[cot])
             except ValueError:
                 d[cot] = []
-    boi_canh = {"tinh_ten": d.get("tinh_ten"), **(boi_canh_chung or {})}
+    boi_canh = {"tinh_ten": d.get("tinh_ten"),
+                "bbox": cau_hinh.nguon_tinh(d.get("tinh_ma") or d.get("ma")).get("bbox"),
+                **(boi_canh_chung or {})}
 
     # Chỉ gom nguồn mạng nếu nhóm có trường cần (cách lấy llm/nhập tay).
     # Nếu đã có nguồn truyền vào (bóc nhiều nhóm từ một lần nạp) thì dùng lại.
@@ -438,48 +440,6 @@ def chay_danh_muc(kho: Kho, *, province_codes: list[str] | None = None) -> dict:
     return {"so_tinh": len(tinh), "so_xa": len(xa)}
 
 
-def chay_nhom(kho: Kho, nhom: str, *, ten: str | None = None, ma: str | None = None,
-              tinh: str | None = None, cap: str = "xa", dung_llm: bool = True,
-              tinh_ma: str | None = None, bo_qua_da_co: bool = False,
-              gioi_han: int | None = None, so_moi_lo: int = 0,
-              nghi_giua_lo: float = 0.0, chia: tuple[int, int] | None = None) -> list[KetQua]:
-    import time as _time
-
-    ds_don_vi = kho.tim_don_vi(ten=ten, ma=ma, tinh_ten=tinh, cap=cap, tinh_ma=tinh_ma,
-                               bo_qua_nhom=(nhom if bo_qua_da_co else None), gioi_han=gioi_han,
-                               chia=chia)
-    nhan_chia = f"-{chia[1]}of{chia[0]}" if chia else ""
-    luot = Luot(ma=f"{nhom}-{datetime.now():%Y%m%d-%H%M%S}{nhan_chia}",
-                pham_vi=ten or tinh or tinh_ma or "tat_ca", nhom_du_lieu=nhom,
-                bat_dau=datetime.now().isoformat(timespec="seconds"))
-    kho.ghi_luot(luot)  # ghi ngay để thấy lượt đang chạy
-    tat_ca: list[KetQua] = []
-    for i, dv in enumerate(ds_don_vi, 1):
-        try:
-            kq = khai_thac_don_vi(dv, nhom, cap=cap, dung_llm=dung_llm)
-        except NguonBiChan as e:
-            print(f"  ⚠ {e} — dừng luồng, chạy tiếp sau (đã lưu tới {dv['ten']})", flush=True)
-            break
-        tat_ca.extend(kq)
-        # Ghi NGAY từng đơn vị: thấy được tiến độ và không mất nếu dừng giữa chừng
-        kho.ghi_ket_qua(kq, luot.ma)
-        so_dat = sum(1 for k in kq if k.trang_thai == DAT)
-        print(f"  [{i}/{len(ds_don_vi)}] {dv['ten']}: {so_dat}/{len(kq)} trường đạt", flush=True)
-        _ghi_tien_trinh(luot.ma, nhom, i, len(ds_don_vi), dv["ten"], len(tat_ca), chia)
-        # Nghỉ giữa các lô để tránh gọi liên tục bị chặn
-        if so_moi_lo and nghi_giua_lo and i % so_moi_lo == 0 and i < len(ds_don_vi):
-            print(f"  … nghỉ {nghi_giua_lo:.0f}s sau lô {i // so_moi_lo}", flush=True)
-            _time.sleep(nghi_giua_lo)
-    luot.ket_thuc = datetime.now().isoformat(timespec="seconds")
-    luot.so_don_vi = len(ds_don_vi)
-    luot.so_ket_qua = len(tat_ca)
-    luot.so_dat = sum(1 for k in tat_ca if k.trang_thai == DAT)
-    luot.nguon = ["open_api_v2", "tinhthanh34", "wikipedia_vi", "photon_osm", "govvn"]
-    kho.ghi_ket_qua(tat_ca, luot.ma)
-    kho.ghi_luot(luot)
-    return tat_ca
-
-
 def _ghi_tien_trinh(luot_ma: str, nhom: str, i: int, tong: int, ten_don_vi: str,
                     so_ket_qua: int, chia: tuple[int, int] | None = None) -> None:
     """Ghi một dòng tiến độ để lệnh `tien-do` đọc được khi đang chạy.
@@ -547,22 +507,25 @@ NHOM_CAN_MANG = {
 }
 
 
-def chay_tinh(kho: Kho, tinh_ma: str, *, nhom: list[str] | None = None,
+def chay_tinh(kho: Kho, tinh_ma: str | None, *, nhom: list[str] | None = None,
               chia: tuple[int, int] | None = None, gioi_han: int | None = None,
               dung_llm: bool = True, bo_qua_da_co: bool = True,
-              so_moi_lo: int = 0, nghi_giua_lo: float = 0.0) -> list[KetQua]:
-    """Cào TOÀN BỘ nhóm cho mọi xã/phường của một tỉnh.
+              so_moi_lo: int = 0, nghi_giua_lo: float = 0.0,
+              ma: str | None = None, ten: str | None = None,
+              tinh_ten: str | None = None, cap: str = "xa") -> list[KetQua]:
+    """Vòng khai thác DUY NHẤT: các nhóm cho mọi xã khớp bộ lọc (tỉnh / mã / tên).
 
-    Mỗi xã chỉ nạp nguồn văn bản MỘT lần rồi bóc tất cả nhóm từ nguồn đó — tránh
-    mở lại trang gov nhiều lần và giảm nguy cơ bị chặn.
+    tinh_ma=None + không lọc = toàn quốc. Mỗi xã chỉ nạp nguồn văn bản MỘT lần rồi
+    bóc tất cả nhóm từ nguồn đó — tránh mở lại trang gov nhiều lần, giảm nguy cơ bị chặn.
     """
     import time as _time
 
-    nhom_list = nhom or NHOM_XA
+    nhom_list = nhom or (NHOM_XA if cap == "xa" else cau_hinh.ds_nhom(cap))
+    nhom_key = (cap + ":" if cap != "xa" else "") + ",".join(sorted(nhom_list))
     can_mang = any(n in NHOM_CAN_MANG for n in nhom_list)
-    nhom_key = ",".join(sorted(nhom_list))
 
-    ds_xa = kho.tim_don_vi(tinh_ma=tinh_ma, cap="xa", chia=chia, gioi_han=gioi_han)
+    ds_xa = kho.tim_don_vi(tinh_ma=tinh_ma, ma=ma, ten=ten, tinh_ten=tinh_ten, cap=cap,
+                           chia=chia, gioi_han=gioi_han)
     if bo_qua_da_co:
         da = kho.da_xu_ly_ds(nhom_key)
         if da:
@@ -570,8 +533,9 @@ def chay_tinh(kho: Kho, tinh_ma: str, *, nhom: list[str] | None = None,
             ds_xa = [dv for dv in ds_xa if dv["ma"] not in da]
             print(f"  (đã xong {truoc - len(ds_xa)} xã từ lần trước · còn {len(ds_xa)})", flush=True)
     nhan_chia = f"-{chia[1]}of{chia[0]}" if chia else ""
-    luot = Luot(ma=f"tinh-{tinh_ma}-{datetime.now():%Y%m%d-%H%M%S}{nhan_chia}",
-                pham_vi=f"tỉnh {tinh_ma}", nhom_du_lieu=",".join(nhom_list),
+    pham_vi = ma or ten or (f"tỉnh {tinh_ma}" if tinh_ma else "toàn quốc")
+    luot = Luot(ma=f"tinh-{tinh_ma or 'tq'}-{datetime.now():%Y%m%d-%H%M%S}{nhan_chia}",
+                pham_vi=pham_vi, nhom_du_lieu=",".join(nhom_list),
                 bat_dau=datetime.now().isoformat(timespec="seconds"))
     kho.ghi_luot(luot)
 
@@ -585,25 +549,25 @@ def chay_tinh(kho: Kho, tinh_ma: str, *, nhom: list[str] | None = None,
             truong_llm: list[dict] = []
             da_co: set[str] = set()
             # Trường LLM đã có giá trị đạt hạng A/B (nguồn có cấu trúc, cổng xã) → LLM chỉ lấp chỗ trống
-            khoa_llm = {t["khoa"] for nh in nhom_list for t in cau_hinh.ds_truong("xa", nh)
+            khoa_llm = {t["khoa"] for nh in nhom_list for t in cau_hinh.ds_truong(cap, nh)
                         if t.get("cach_lay") == "llm"}
             da_co_cau_truc = khoa_llm & kho.truong_da_dat(
                 dv["ma"], muc=("A", "B"), tru_nguon=("nhap_tay_de_xuat", "de_an_sap_xep_hp"))
             for nh in nhom_list:
-                for t in cau_hinh.ds_truong("xa", nh):
+                for t in cau_hinh.ds_truong(cap, nh):
                     if t.get("cach_lay") == "llm" and t["khoa"] not in da_co | da_co_cau_truc:
                         da_co.add(t["khoa"])
                         truong_llm.append(t)
             llm_da_boc = _boc_llm_hang_loat(truong_llm, nguons, dung_llm) if truong_llm else {}
             kq_xa: list[KetQua] = []
             for nh in nhom_list:
-                kq_xa += khai_thac_don_vi(dv, nh, nguons=nguons, dung_llm=dung_llm,
+                kq_xa += khai_thac_don_vi(dv, nh, cap=cap, nguons=nguons, dung_llm=dung_llm,
                                           llm_da_boc=llm_da_boc, bo_qua=da_co_cau_truc)
         except HetGio:
             # Báo thức cắt ngang Playwright làm hỏng pipe tới driver: gọi close() lúc này
             # là treo vĩnh viễn (EPIPE). Thoát hẳn, script gọi lại sẽ chạy tiếp.
             # ponytail: xã quá giờ bị đánh dấu xong để không lặp vô hạn; chạy lại riêng
-            # bằng `khai-thac xa --ma <mã> --lam-lai` khi cần.
+            # bằng `khai-thac xa --ma <mã> --nhom ... --lam-lai` khi cần.
             kho.danh_dau_da_xu_ly(nhom_key, dv["ma"])
             print(f"  ⏱ {dv['ten']} ({dv['ma']}): quá {GIO_MOI_XA}s, bỏ qua — khởi động lại tiến trình",
                   flush=True)
@@ -625,7 +589,7 @@ def chay_tinh(kho: Kho, tinh_ma: str, *, nhom: list[str] | None = None,
         tat_ca += kq_xa
         so_dat = sum(1 for k in kq_xa if k.trang_thai == DAT)
         print(f"  [{i}/{len(ds_xa)}] {dv['ten']}: {so_dat}/{len(kq_xa)} trường đạt", flush=True)
-        _ghi_tien_trinh(luot.ma, "tinh-" + tinh_ma, i, len(ds_xa), dv["ten"], len(tat_ca), chia)
+        _ghi_tien_trinh(luot.ma, pham_vi, i, len(ds_xa), dv["ten"], len(tat_ca), chia)
         if so_moi_lo and nghi_giua_lo and i % so_moi_lo == 0 and i < len(ds_xa):
             print(f"  … nghỉ {nghi_giua_lo:.0f}s sau lô {i // so_moi_lo}", flush=True)
             _time.sleep(nghi_giua_lo)

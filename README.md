@@ -13,7 +13,9 @@ nguồn ngoài → nguon/ → trich_xuat/ → kiem_tra/ → store/ (SQLite) → 
 ```
 
 - `config/truong_du_lieu.yaml` — cấu hình từng trường theo cấp và nhóm.
-- `config/nguon.yaml` — sổ đăng ký nguồn (mục A/B/C, giấy phép, nhịp gọi).
+- `config/nguon/<mã tỉnh>.yaml` — nguồn của từng tỉnh (mẫu cổng xã, bbox, danh sách nguồn);
+  `config/nguon/_chung.yaml` — nguồn dùng cho mọi tỉnh. Xem mục **Thêm nguồn cho một tỉnh**.
+- `config/nguon.yaml` — sổ đăng ký nguồn cũ (hạng A/B/C, nhịp gọi, miền chặn).
 - `khai_thac/nguon/` — đọc nguồn: danh mục, wikipedia, tìm kiếm, tải trang, toạ độ.
 - `khai_thac/trich_xuat/` — bóc giá trị: quy tắc tất định + LLM (Ollama).
 - `khai_thac/kiem_tra.py` — bộ quy tắc kiểm (rỗng, danh sách, mã ĐVHC, ngày, số,
@@ -67,10 +69,37 @@ for k in 0 1 2 3; do
   uv run khai-thac tinh --ma 01 --shard $k/4 > logs/hn-$k.log 2>&1 &
 done; wait
 
-# Toàn quốc, tuần tự theo tỉnh, 4 luồng/tỉnh
-./chay-theo-tinh.sh 4
-./chay-theo-tinh.sh 4 --dung-proxy
+# Qua đêm nhiều tỉnh: nguồn cấu trúc → cào → LLM → thôn → xuất (tự chạy tiếp khi treo)
+setsid nohup ./dieu-phoi.sh "31 01 48 79 92 46" 6 > logs/dieu-phoi.run 2>&1 < /dev/null &
+./giam-sat.sh "31 01 48 79 92 46"     # tuỳ chọn: tự khởi động lại dieu-phoi nếu chết
 ```
+
+## Thêm nguồn cho một tỉnh (không viết code)
+
+Mỗi tỉnh một tệp `config/nguon/<mã>.yaml` (vd `46.yaml` = Huế):
+
+```yaml
+ten: Huế
+cong_xa: {mau: "https://{slug}.hue.gov.vn"}   # {slug}=tên bỏ tiền tố/dấu, {loai}=xa|phuong|dackhu
+bbox: [15.9, 16.8, 107.0, 108.3]              # kiểm toạ độ "trong tỉnh"
+nguon:
+  - {ma: hue_svhttdl, loai: van_ban, url: "https://svhttdl.hue.gov.vn/di-san-van-hoa.html", muc: A}
+  - ma: hue_bang_dan_so
+    loai: bang                 # có cấu trúc → `khai-thac nguon`, không qua LLM
+    dinh_dang: html            # json | html | pdf | xlsx
+    url: https://...
+    khoa_xa: {ten: "Tên đơn vị"}            # hoặc {ma: code} nếu nguồn có mã ĐVHC
+    cot: {dan_so: "Dân số", dien_tich_km2: "Diện tích"}
+    muc: A
+```
+
+- `bang`: chạy bằng `uv run khai-thac nguon --tinh-ma 46` (hoặc `--ma hue_bang_dan_so`).
+  Trường đã đạt hạng A/B từ đây sẽ **không gửi LLM** nữa.
+- `van_ban`: trang cấp tỉnh (danh mục di tích, lễ hội…) — khi khai thác từng xã, chỉ đoạn
+  văn nhắc tên xã đó được đưa vào LLM.
+- `adapter`: site cần code riêng (`module: nongsan` → `khai_thac/nguon/nongsan.py`).
+- Tỉnh chưa có tệp vẫn chạy được (Wikipedia + tìm kiếm), chỉ kém hơn.
+- Cổng xã đã dò lưu theo **mã** ở `du_lieu/cong_xa.json` (tên trùng giữa tỉnh không lẫn).
 
 Hồ sơ chạy nằm ở `config/chay.yaml` (phạm vi, nhóm, chia lô, proxy, LLM, bàn giao).
 Dòng lệnh ghi đè được.
@@ -96,8 +125,9 @@ uv run khai-thac proxy --tai && uv run khai-thac proxy --kiem-tra 150
 # rồi đặt mang.dung_proxy: true trong config/chay.yaml (hoặc thêm --dung-proxy)
 ```
 
-Tiến trình và kết quả nằm trong `du_lieu/khai_thac.sqlite`; `xuat` chỉ lấy bản mới
-nhất mỗi trường nên bàn giao không bị trùng giữa các lần chạy.
+Tiến trình và kết quả nằm trong `du_lieu/khai_thac.sqlite`; `xuat` lấy **một** giá trị
+tốt nhất mỗi trường (đạt → hạng A>B>C → điểm tin → năm số liệu → mới nhất). Các ứng viên
+khác vẫn trong kho cho màn duyệt mâu thuẫn.
 
 ## Tìm kiếm (Brave Search API)
 
