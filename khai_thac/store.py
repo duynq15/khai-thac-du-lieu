@@ -218,6 +218,34 @@ class Kho:
                     out.setdefault(k, ma)
         return out
 
+    def ban_do_ma(self, tinh_ma: str | None = None) -> dict[str, str]:
+        """Tên (cũ hoặc mới, có/không tiền tố, đã chuẩn hoá) -> mã xã MỚI của một tỉnh.
+
+        Dùng chung cho mọi nguồn ghép dữ liệu theo tên xã. Luôn truyền tinh_ma: tên
+        trùng giữa các tỉnh (Phường Hương Trà ở Huế và Đà Nẵng) chỉ phân biệt được theo tỉnh.
+        """
+        import re as _re
+
+        from .text import chuan_hoa
+
+        bd = dict(self.ban_do_ten_cu(tinh_ma))
+        for row in self.tim_don_vi(tinh_ma=tinh_ma, cap="xa"):
+            bd[chuan_hoa(row["ten"])] = row["ma"]
+            bd[chuan_hoa(_re.sub(r"^(Xã|Phường|Đặc khu|Thị trấn)\s+", "", row["ten"]))] = row["ma"]
+        return bd
+
+    @staticmethod
+    def tim_ma_xa(ban_do: dict[str, str], ten: str) -> str | None:
+        """Tra mã xã từ tên trong nguồn ('Đông Anh', 'Xã Đông Anh', 'phường X')."""
+        from .text import chuan_hoa
+
+        ten = str(ten or "").strip()
+        for k in (ten, "Xã " + ten, "Phường " + ten):
+            ma = ban_do.get(chuan_hoa(k))
+            if ma:
+                return ma
+        return None
+
     # ---------------------------------------------------------------- lượt
     def ghi_luot(self, luot: Luot) -> None:
         self.conn.execute(

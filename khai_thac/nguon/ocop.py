@@ -16,7 +16,7 @@ from bs4 import BeautifulSoup
 from ..http import html_goi
 from ..models import KetQua, Luot
 from ..store import Kho
-from ..text import chuan_hoa, rut_gon
+from ..text import rut_gon
 
 GOC = "http://ocop.gov.vn"
 NGUON_MA = "ocop_gov"
@@ -109,19 +109,11 @@ def _chi_tiet(url: str) -> dict | None:
     }
 
 
-def _khop(kho: Kho, tinh_ma: str | None) -> dict[str, str]:
-    bd: dict[str, str] = dict(kho.ban_do_ten_cu(tinh_ma))  # tên cũ -> xã mới
-    for row in kho.tim_don_vi(tinh_ma=tinh_ma, cap="xa"):
-        ten = row["ten"]
-        bd[chuan_hoa(ten)] = row["ma"]
-        bd[chuan_hoa(re.sub(r"^(Xã|Phường|Đặc khu|Thị trấn)\s+", "", ten))] = row["ma"]
-    return bd
-
 
 def nap(kho: Kho, *, tinh_ma: str | None = None, toi_da_moi_danh_muc: int = 200,
         so_trang_moi_danh_muc: int = 15, gioi_han: int | None = None) -> dict:
-    khop = _khop(kho, tinh_ma)
-    ma2ten = {r["ma"]: r["ten"] for r in kho.tim_don_vi(cap="xa")}
+    khop = kho.ban_do_ma(tinh_ma)
+    ma2ten = {r["ma"]: r["ten"] for r in kho.tim_don_vi(cap="xa", tinh_ma=tinh_ma)}
 
     luot = Luot(ma=f"ocop-{__import__('datetime').datetime.now():%Y%m%d-%H%M%S}",
                 pham_vi=f"tinh {tinh_ma}" if tinh_ma else "toan_quoc", nhom_du_lieu="ocop",
@@ -140,8 +132,7 @@ def nap(kho: Kho, *, tinh_ma: str | None = None, toi_da_moi_danh_muc: int = 200,
             sp = _chi_tiet(url)
             if not sp or not sp["xa"]:
                 continue
-            ma = khop.get(chuan_hoa(sp["xa"])) or khop.get(chuan_hoa("Xã " + sp["xa"])) or \
-                khop.get(chuan_hoa("Phường " + sp["xa"]))
+            ma = Kho.tim_ma_xa(khop, sp["xa"])
             if not ma:
                 continue
             nhan = sp["ten"]

@@ -16,7 +16,7 @@ from pathlib import Path
 
 from ..models import DAT, KetQua, Luot
 from ..store import Kho
-from ..text import bo_dau, chuan_hoa
+from ..text import chuan_hoa
 
 NGUON_MA = "vbpl_chinh_thong"
 NGUON_TEN = "Văn bản pháp lý (Đề án/Nghị quyết sắp xếp ĐVHC)"
@@ -113,15 +113,6 @@ def _tim_cot(rows: list[list[str]]) -> tuple[int, dict[str, int]] | None:
     return None
 
 
-def _khop(kho: Kho, tinh_ma: str | None) -> dict[str, str]:
-    """Bản đồ tên chuẩn hoá -> mã đơn vị (có cả bản bỏ tiền tố)."""
-    bd: dict[str, str] = {}
-    for row in kho.tim_don_vi(tinh_ma=tinh_ma, cap="xa"):
-        ma, ten = row["ma"], row["ten"]
-        bd[chuan_hoa(ten)] = ma
-        bd[chuan_hoa(re.sub(r"^(Xã|Phường|Đặc khu|Thị trấn|Tỉnh|Thành phố)\s+", "", ten))] = ma
-    return bd
-
 
 def nap(kho: Kho, tep: str | Path, *, tinh_ma: str | None = None) -> dict:
     tep = Path(tep)
@@ -130,8 +121,8 @@ def nap(kho: Kho, tep: str | Path, *, tinh_ma: str | None = None) -> dict:
 
     bam = bam_sha256(tep)
     bang = doc_bang(tep)
-    ma2ten = {r["ma"]: r["ten"] for r in kho.tim_don_vi(cap="xa")}
-    khop = _khop(kho, tinh_ma)
+    ma2ten = {r["ma"]: r["ten"] for r in kho.tim_don_vi(cap="xa", tinh_ma=tinh_ma)}
+    khop = kho.ban_do_ma(tinh_ma)
 
     luot = Luot(ma=f"phap-ly-{bam[:8]}", pham_vi=str(tep.name),
                 nhom_du_lieu="phap_ly", bat_dau=__import__("datetime").datetime.now().isoformat(timespec="seconds"))
@@ -154,7 +145,7 @@ def nap(kho: Kho, tep: str | Path, *, tinh_ma: str | None = None) -> dict:
             ten = row[cot["ten"]].strip()
             if not ten or _so(ten) is not None:
                 continue
-            ma = khop.get(chuan_hoa(ten)) or khop.get(chuan_hoa(ten.replace("Phường ", "").replace("Xã ", "")))
+            ma = Kho.tim_ma_xa(khop, ten)
             if not ma:
                 khong_khop.append(ten)
                 continue

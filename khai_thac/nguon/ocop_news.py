@@ -16,7 +16,7 @@ from bs4 import BeautifulSoup
 from ..http import html_goi
 from ..models import KetQua, Luot
 from ..store import Kho
-from ..text import chuan_hoa, rut_gon
+from ..text import rut_gon
 
 NGUON_MA = "ocop_news"
 NGUON_TEN = "Tin công bố OCOP"
@@ -40,14 +40,6 @@ def boc(text: str) -> list[dict]:
     return ket
 
 
-def _khop(kho: Kho, tinh_ma: str | None) -> dict[str, str]:
-    bd = dict(kho.ban_do_ten_cu(tinh_ma))
-    for row in kho.tim_don_vi(tinh_ma=tinh_ma, cap="xa"):
-        ten = row["ten"]
-        bd[chuan_hoa(ten)] = row["ma"]
-        bd[chuan_hoa(re.sub(r"^(Xã|Phường|Đặc khu|Thị trấn)\s+", "", ten))] = row["ma"]
-    return bd
-
 
 def nap_url(kho: Kho, url: str, *, tinh_ma: str | None = None) -> dict:
     h = html_goi(url, thu_lai=2, timeout=30.0)
@@ -58,12 +50,11 @@ def nap_url(kho: Kho, url: str, *, tinh_ma: str | None = None) -> dict:
         t.decompose()
     text = soup.get_text("\n", strip=True)
 
-    khop = _khop(kho, tinh_ma)
-    ma2ten = {r["ma"]: r["ten"] for r in kho.tim_don_vi(cap="xa")}
+    khop = kho.ban_do_ma(tinh_ma)
+    ma2ten = {r["ma"]: r["ten"] for r in kho.tim_don_vi(cap="xa", tinh_ma=tinh_ma)}
     gom: dict[str, list[str]] = {}
     for sp in boc(text):
-        ma = (khop.get(chuan_hoa(sp["xa"])) or khop.get(chuan_hoa("Xã " + sp["xa"]))
-              or khop.get(chuan_hoa("Phường " + sp["xa"])))
+        ma = Kho.tim_ma_xa(khop, sp["xa"])
         if ma:
             gom.setdefault(ma, []).append(f"{sp['ten']} ({sp['chu_the']})")
 

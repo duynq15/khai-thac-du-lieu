@@ -14,7 +14,6 @@ from bs4 import BeautifulSoup
 from ..http import html_goi
 from ..models import KetQua, Luot
 from ..store import Kho
-from ..text import chuan_hoa
 
 GOC = "https://nongsan.haiphong.gov.vn"
 NGUON_MA = "nongsan_haiphong"
@@ -82,12 +81,8 @@ def chi_tiet(url: str) -> dict | None:
 
 
 def nap(kho: Kho, *, tinh_ma: str | None = "31", gioi_han: int | None = None) -> dict:
-    khop = dict(kho.ban_do_ten_cu(tinh_ma))
-    for row in kho.tim_don_vi(tinh_ma=tinh_ma, cap="xa"):
-        ten = row["ten"]
-        khop[chuan_hoa(ten)] = row["ma"]
-        khop[chuan_hoa(re.sub(r"^(Xã|Phường|Đặc khu|Thị trấn)\s+", "", ten))] = row["ma"]
-    ma2ten = {r["ma"]: r["ten"] for r in kho.tim_don_vi(cap="xa")}
+    khop = kho.ban_do_ma(tinh_ma)
+    ma2ten = {r["ma"]: r["ten"] for r in kho.tim_don_vi(cap="xa", tinh_ma=tinh_ma)}
 
     luot = Luot(ma=f"nongsan-{__import__('datetime').datetime.now():%Y%m%d-%H%M%S}",
                 pham_vi=f"tinh {tinh_ma}" if tinh_ma else "toan_quoc", nhom_du_lieu="ocop",
@@ -116,8 +111,7 @@ def nap(kho: Kho, *, tinh_ma: str | None = "31", gioi_han: int | None = None) ->
             sp = chi_tiet(url)
             if not sp or not sp["xa"]:
                 continue
-            ma = (khop.get(chuan_hoa(sp["xa"])) or khop.get(chuan_hoa("Xã " + sp["xa"]))
-                  or khop.get(chuan_hoa("Phường " + sp["xa"])))
+            ma = Kho.tim_ma_xa(khop, sp["xa"])
             if not ma:
                 continue
             nhan = sp["ten"]
