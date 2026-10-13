@@ -200,7 +200,7 @@ def _hien_thi(gt, kieu: str):
         return "; ".join(str(x) for x in gt)
     if isinstance(gt, dict):
         if "lat" in gt:
-            return f"{gt['lat']:.5f}, {gt['lon']:.5f}"
+            return f"{gt['lat']}, {gt['lon']}"
         return "; ".join(f"{k}: {v}" for k, v in gt.items())
     if kieu == "ngay" and isinstance(gt, str) and re.match(r"^\d{4}-\d{2}-\d{2}$", gt):
         y, m, d = gt.split("-")
