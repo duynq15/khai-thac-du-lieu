@@ -1,0 +1,211 @@
+# Cấu hình trường dữ liệu — bản dịch từ màn "Thiết lập trường dữ liệu".
+#
+# Mỗi cấp (tinh / xa / thon) gồm nhiều nhóm; mỗi nhóm gồm nhiều trường.
+# Thuộc tính một trường:
+#   khoa       mã trường (khoá JSON, không dấu)
+#   nhan       nhãn hiện trên giao diện
+#   kieu       van_ban | danh_sach | ma_so | ngay | anh | toa_do | so | email | dien_thoai | url
+#   bat_buoc   có bắt buộc không
+#   cach_lay   danh_muc | llm | nhap_tay | tu_dong
+#   kiem_tra   danh sách quy tắc kiểm (xem khai_thac/kiem_tra.py)
+#   mo_ta      ghi chú nghiệp vụ
+
+phien_ban: 2026-10-11
+
+cap:
+
+  # ============================================================ TỈNH / THÀNH
+  tinh:
+    nhan: Tỉnh/Thành
+    nhom:
+
+      thong_tin_chung:
+        nhan: Thông tin chung
+        truong:
+          - {khoa: ten, nhan: Tên tỉnh, thành phố, kieu: van_ban, bat_buoc: true, cach_lay: danh_muc, kiem_tra: [khong_rong]}
+          - {khoa: loai, nhan: Loại đơn vị, kieu: danh_sach, bat_buoc: true, cach_lay: danh_muc, kiem_tra: [trong_danh_sach], gia_tri_cho_phep: [Tỉnh, Thành phố]}
+          - {khoa: ma_dvhc, nhan: Mã đơn vị hành chính, kieu: ma_so, bat_buoc: true, cach_lay: danh_muc, kiem_tra: [ma_dvhc]}
+          - {khoa: vung, nhan: Vùng kinh tế – xã hội, kieu: danh_sach, cach_lay: danh_muc, kiem_tra: [khong_rong]}
+          - {khoa: tram_so_dien_thoai, nhan: Mã vùng điện thoại, kieu: dien_thoai, cach_lay: danh_muc, kiem_tra: [dien_thoai]}
+          - {khoa: bien_so_xe, nhan: Biển số xe, kieu: van_ban, cach_lay: danh_muc}
+          - {khoa: dien_tich_km2, nhan: Diện tích (km²), kieu: so, cach_lay: danh_muc, kiem_tra: [so_duong]}
+          - {khoa: dan_so, nhan: Dân số (người), kieu: so, cach_lay: danh_muc, kiem_tra: [so_duong]}
+          - {khoa: mat_do_dan_so, nhan: Mật độ dân số (người/km²), kieu: so, cach_lay: danh_muc, kiem_tra: [so_duong]}
+          - {khoa: gioi_thieu, nhan: Giới thiệu, kieu: van_ban, cach_lay: llm, kiem_tra: [co_trich_dan]}
+
+      hanh_chinh:
+        nhan: Hành chính – Dân cư
+        truong:
+          - {khoa: tru_so_ubnd, nhan: Trụ sở UBND tỉnh, kieu: van_ban, cach_lay: danh_muc}
+          - {khoa: cong_ttdt, nhan: Cổng thông tin điện tử, kieu: url, cach_lay: llm, kiem_tra: [url]}
+          - {khoa: so_don_vi_hanh_chinh, nhan: Số đơn vị hành chính cấp xã, kieu: so, cach_lay: danh_muc, kiem_tra: [so_khong_am]}
+          - {khoa: co_cau_don_vi, nhan: Cơ cấu (phường · xã · đặc khu), kieu: ban_ghi, cach_lay: danh_muc}
+
+      sap_xep_2025:
+        nhan: Sắp xếp 2025
+        truong:
+          - {khoa: tinh_cu_hop_thanh, nhan: Hợp thành từ tỉnh cũ, kieu: danh_sach, cach_lay: danh_muc}
+          - {khoa: tong_don_vi_cu, nhan: Tổng đơn vị cấp xã cũ hợp thành, kieu: so, cach_lay: danh_muc, kiem_tra: [so_duong]}
+          - {khoa: can_cu_phap_ly, nhan: Căn cứ pháp lý, kieu: van_ban, cach_lay: danh_muc}
+
+      lich_su_dia_danh:
+        nhan: Lịch sử – Địa danh
+        truong:
+          - {khoa: lich_su_hinh_thanh, nhan: Lịch sử hình thành, kieu: van_ban, cach_lay: llm, kiem_tra: [co_trich_dan]}
+
+      di_tich:
+        nhan: Di tích
+        truong:
+          - {khoa: di_tich_quoc_gia_dac_biet, nhan: Di tích quốc gia đặc biệt, kieu: ban_ghi, thuoc_tinh: [ten, dia_ban], cach_lay: llm, kiem_tra: [co_trich_dan]}
+          - {khoa: di_tich_quoc_gia, nhan: Di tích quốc gia, kieu: ban_ghi, thuoc_tinh: [ten, dia_ban], cach_lay: llm, kiem_tra: [co_trich_dan]}
+
+      le_hoi:
+        nhan: Lễ hội
+        truong:
+          - {khoa: le_hoi_cap_tinh, nhan: Lễ hội cấp tỉnh, kieu: ban_ghi, thuoc_tinh: [ten, thoi_gian, dia_ban], cach_lay: llm, kiem_tra: [co_trich_dan]}
+          - {khoa: di_san_phi_vat_the, nhan: Di sản văn hoá phi vật thể, kieu: danh_sach, cach_lay: llm, kiem_tra: [co_trich_dan]}
+
+      kinh_te_van_hoa:
+        nhan: Kinh tế – Văn hoá
+        truong:
+          - {khoa: dac_san, nhan: Đặc sản, kieu: danh_sach, cach_lay: llm, kiem_tra: [co_trich_dan]}
+          - {khoa: ocop_tieu_bieu, nhan: Sản phẩm OCOP tiêu biểu, kieu: danh_sach, cach_lay: llm, kiem_tra: [co_trich_dan]}
+
+      con_nguoi:
+        nhan: Con người
+        truong:
+          - {khoa: danh_nhan_tieu_bieu, nhan: Danh nhân tiêu biểu, kieu: danh_sach, cach_lay: llm, kiem_tra: [co_trich_dan]}
+
+  # ============================================================ XÃ / PHƯỜNG
+  xa:
+    nhan: Xã/Phường
+    nhom:
+
+      thong_tin_chung:
+        nhan: Thông tin chung
+        truong:
+          - {khoa: ten, nhan: Tên xã, phường, đặc khu, kieu: van_ban, bat_buoc: true, cach_lay: danh_muc, kiem_tra: [khong_rong]}
+          - {khoa: loai, nhan: Loại đơn vị, kieu: danh_sach, bat_buoc: true, cach_lay: danh_muc, kiem_tra: [trong_danh_sach], gia_tri_cho_phep: [Xã, Phường, Đặc khu]}
+          - {khoa: ma_dvhc, nhan: Mã đơn vị hành chính, kieu: ma_so, bat_buoc: true, cach_lay: danh_muc, kiem_tra: [ma_dvhc]}
+          - {khoa: truc_thuoc_tinh, nhan: Trực thuộc tỉnh, kieu: van_ban, bat_buoc: true, cach_lay: danh_muc, kiem_tra: [khong_rong]}
+          - {khoa: ngay_thanh_lap, nhan: Ngày thành lập, kieu: ngay, bat_buoc: true, cach_lay: danh_muc, kiem_tra: [ngay]}
+          - {khoa: anh_bia, nhan: Ảnh bìa, kieu: anh, cach_lay: nhap_tay, kiem_tra: [co_nguon_anh]}
+          - {khoa: gioi_thieu, nhan: Giới thiệu, kieu: van_ban, bat_buoc: true, cach_lay: llm, kiem_tra: [co_trich_dan, do_dai_toi_da_800]}
+          - {khoa: ranh_gioi_vi_tri, nhan: Ranh giới / vị trí, kieu: toa_do, cach_lay: nhap_tay, kiem_tra: [trong_viet_nam, trong_tinh]}
+
+      hanh_chinh_dan_cu:
+        nhan: Hành chính – Dân cư
+        truong:
+          - {khoa: tru_so, nhan: Trụ sở (địa chỉ), kieu: van_ban, cach_lay: llm, kiem_tra: [co_trich_dan]}
+          - {khoa: dien_thoai, nhan: Điện thoại, kieu: dien_thoai, cach_lay: llm, kiem_tra: [dien_thoai]}
+          - {khoa: email, nhan: Email, kieu: email, cach_lay: llm, kiem_tra: [email]}
+          - {khoa: gio_lam_viec, nhan: Giờ làm việc, kieu: van_ban, cach_lay: llm}
+          - {khoa: chu_tich_ubnd, nhan: Chủ tịch UBND, kieu: van_ban, cach_lay: llm, kiem_tra: [co_trich_dan]}
+          - {khoa: don_vi_truc_thuoc, nhan: Số đơn vị trực thuộc, kieu: so, cach_lay: tu_dong, kiem_tra: [so_khong_am]}
+          - {khoa: dan_so, nhan: Dân số (người), kieu: so, cach_lay: llm, kiem_tra: [so_duong]}
+          - {khoa: so_ho, nhan: Số hộ, kieu: so, cach_lay: llm, kiem_tra: [so_duong]}
+          - {khoa: dien_tich_km2, nhan: Diện tích (km²), kieu: so, cach_lay: llm, kiem_tra: [so_duong]}
+
+      sap_xep_2025:
+        nhan: Sắp xếp 2025
+        truong:
+          - {khoa: don_vi_cu_hop_thanh, nhan: Hợp thành từ các đơn vị cũ, kieu: danh_sach, cach_lay: danh_muc, bat_buoc: true}
+          - {khoa: so_don_vi_cu, nhan: Số đơn vị cũ, kieu: so, cach_lay: danh_muc, kiem_tra: [so_duong]}
+          - {khoa: can_cu_phap_ly, nhan: Căn cứ pháp lý, kieu: van_ban, cach_lay: danh_muc}
+          - {khoa: ngay_hieu_luc, nhan: Ngày hiệu lực, kieu: ngay, cach_lay: danh_muc, kiem_tra: [ngay]}
+          - {khoa: don_vi_cu_chi_tiet, nhan: Đơn vị cũ (tên · huyện cũ · Toàn bộ/Một phần), kieu: danh_sach, cach_lay: danh_muc}
+
+      lich_su_dia_danh:
+        nhan: Lịch sử – Địa danh
+        truong:
+          - {khoa: dien_cach_hanh_chinh, nhan: Điền cách hành chính, kieu: van_ban, cach_lay: llm}
+          - {khoa: nguon_goc_ten_xa, nhan: Nguồn gốc tên xã, kieu: van_ban, cach_lay: llm, kiem_tra: [co_trich_dan]}
+
+      di_tich:
+        nhan: Di tích
+        truong:
+          - {khoa: di_tich_xep_hang, nhan: Di tích trên địa bàn, kieu: ban_ghi, thuoc_tinh: [ten, loai, xep_hang, nam_cong_nhan, doi_tuong_tho, thuoc_thon], cach_lay: llm, kiem_tra: [co_trich_dan]}
+
+      le_hoi:
+        nhan: Lễ hội
+        truong:
+          - {khoa: le_hoi_cua_xa, nhan: Lễ hội chung của xã, kieu: ban_ghi, thuoc_tinh: [ten, loai, thoi_gian_am_lich, dia_diem, doi_tuong_tho], cach_lay: llm, kiem_tra: [co_trich_dan]}
+
+      kinh_te_van_hoa:
+        nhan: Kinh tế – Văn hoá
+        truong:
+          - {khoa: lang_nghe, nhan: Làng nghề, kieu: danh_sach, cach_lay: llm, kiem_tra: [co_trich_dan]}
+          - {khoa: ocop, nhan: Sản phẩm OCOP, kieu: danh_sach, cach_lay: llm, kiem_tra: [co_trich_dan]}
+
+      con_nguoi:
+        nhan: Con người
+        truong:
+          - {khoa: nhan_vat_lich_su, nhan: Nhân vật lịch sử, kieu: danh_sach, cach_lay: llm, kiem_tra: [co_trich_dan]}
+          - {khoa: khoa_bang, nhan: Khoa bảng, kieu: danh_sach, cach_lay: llm, kiem_tra: [co_trich_dan]}
+
+  # ============================================================ THÔN / TDP
+  thon:
+    nhan: Thôn/TDP
+    nhom:
+
+      thong_tin_chung:
+        nhan: Thông tin chung
+        truong:
+          - {khoa: ten, nhan: Tên thôn, tổ dân phố, kieu: van_ban, bat_buoc: true, cach_lay: danh_muc, kiem_tra: [khong_rong]}
+          - {khoa: truc_thuoc_xa, nhan: Trực thuộc xã, kieu: van_ban, bat_buoc: true, cach_lay: danh_muc, kiem_tra: [khong_rong]}
+          - {khoa: ma, nhan: Mã thôn, kieu: ma_so, cach_lay: danh_muc}
+          - {khoa: ngay_thanh_lap, nhan: Ngày thành lập, kieu: ngay, cach_lay: nhap_tay, kiem_tra: [ngay]}
+          - {khoa: anh_thon, nhan: Ảnh thôn, kieu: anh, cach_lay: nhap_tay, kiem_tra: [co_nguon_anh]}
+          - {khoa: cac_xom, nhan: Các xóm, kieu: danh_sach, cach_lay: llm, kiem_tra: [co_trich_dan]}
+          - {khoa: gioi_thieu, nhan: Giới thiệu, kieu: van_ban, cach_lay: llm, kiem_tra: [co_trich_dan]}
+
+      hanh_chinh_dan_cu:
+        nhan: Hành chính – Dân cư
+        truong:
+          - {khoa: nha_van_hoa, nhan: Nhà văn hoá / trụ sở thôn, kieu: van_ban, cach_lay: llm}
+          - {khoa: so_ho, nhan: Số hộ, kieu: so, cach_lay: llm, kiem_tra: [so_khong_am]}
+          - {khoa: nhan_khau, nhan: Nhân khẩu, kieu: so, cach_lay: llm, kiem_tra: [so_khong_am]}
+          - {khoa: truong_thon, nhan: Trưởng thôn (chức danh), kieu: van_ban, cach_lay: nhap_tay}
+
+      lich_su_dia_danh:
+        nhan: Lịch sử – Địa danh
+        truong:
+          - {khoa: ten_nom, nhan: Tên Nôm, tên cổ, kieu: van_ban, cach_lay: llm, kiem_tra: [co_trich_dan]}
+          - {khoa: nguon_goc_ten_lang, nhan: Nguồn gốc tên làng, kieu: van_ban, cach_lay: llm, kiem_tra: [co_trich_dan]}
+          - {khoa: tich_lang, nhan: Tích làng, kieu: van_ban, cach_lay: llm, kiem_tra: [co_trich_dan]}
+          - {khoa: thon_cu_hinh_thanh, nhan: Hình thành từ thôn cũ, kieu: danh_sach, cach_lay: llm, kiem_tra: [co_trich_dan]}
+          - {khoa: kieu_thay_doi, nhan: Kiểu thay đổi (giữ nguyên · sáp nhập · đổi tên · tách), kieu: van_ban, cach_lay: nhap_tay}
+
+      di_tich:
+        nhan: Di tích
+        truong:
+          - {khoa: dinh_chua_den_mieu, nhan: Đình, chùa, đền, miếu, kieu: ban_ghi, thuoc_tinh: [ten, loai, doi_tuong_tho, xep_hang], cach_lay: llm, kiem_tra: [co_trich_dan]}
+          - {khoa: nha_tho_ho, nhan: Nhà thờ họ, kieu: danh_sach, cach_lay: llm, kiem_tra: [co_trich_dan]}
+
+      le_hoi:
+        nhan: Lễ hội
+        truong:
+          - {khoa: hoi_lang_ngay_am, nhan: Hội làng – ngày âm lịch, kieu: van_ban, cach_lay: llm, kiem_tra: [co_trich_dan]}
+          - {khoa: nghi_le_doi_tuong_tho, nhan: Nghi lễ, đối tượng thờ, kieu: van_ban, cach_lay: llm, kiem_tra: [co_trich_dan]}
+
+      kinh_te_van_hoa:
+        nhan: Kinh tế – Văn hoá
+        truong:
+          - {khoa: nghe_truyen_thong, nhan: Nghề truyền thống của thôn, kieu: danh_sach, cach_lay: llm, kiem_tra: [co_trich_dan]}
+
+      con_nguoi:
+        nhan: Con người
+        truong:
+          - {khoa: dong_ho_lon, nhan: Dòng họ lớn (liên kết Gia phả), kieu: danh_sach, cach_lay: llm, kiem_tra: [co_trich_dan]}
+
+# ============================================================ TIN TỨC
+tin_tuc:
+  nhan: Tin tức – Sự kiện
+  truong:
+    - {khoa: tieu_de, nhan: Tiêu đề, kieu: van_ban, bat_buoc: true, kiem_tra: [khong_rong]}
+    - {khoa: tom_tat, nhan: Tóm tắt, kieu: van_ban, cach_lay: llm}
+    - {khoa: anh_dai_dien, nhan: Ảnh đại diện, kieu: anh}
+    - {khoa: duong_dan_bai_goc, nhan: Đường dẫn bài gốc, kieu: url, bat_buoc: true, kiem_tra: [url]}
+    - {khoa: don_vi, nhan: Gắn với đơn vị, kieu: van_ban, cach_lay: llm}
+    - {khoa: chuyen_muc, nhan: Chuyên mục đề xuất, kieu: danh_sach, cach_lay: llm}
+    - {khoa: do_tin_phan_loai, nhan: Độ tin phân loại, kieu: so, kiem_tra: [so_khong_am]}

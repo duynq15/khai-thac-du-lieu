@@ -1,0 +1,281 @@
+# Sổ đăng ký nguồn — mọi giá trị khai thác phải trỏ về một dòng ở đây.
+# muc: A = chính thống (*.gov.vn, *.dcs.vn, văn bản nhà nước)
+#      B = báo chí chính thống
+#      C = nguồn mở khác (Wikipedia, OSM, dataset cộng đồng)
+
+phien_ban: 2026-10-12
+
+nguon:
+
+  # ============================================================
+  # TẦNG 1: DANH MỤC & PHÁP LÝ HÀNH CHÍNH QUỐC GIA (ĐỘ TIN CAO)
+  # ============================================================
+  - ma: open_api_v2
+    ten: Provinces Open API v2
+    url: https://provinces.open-api.vn/api/v2/
+    lop: danh_muc
+    muc: C
+    giay_phep: Dữ liệu mở
+    ghi_chu: 34 tỉnh và 3.321 xã/phường sau sáp nhập 01/07/2025
+
+  - ma: tinhthanh34
+    ten: 34tinhthanh.com
+    url: https://34tinhthanh.com/api/
+    lop: danh_muc
+    muc: C
+    giay_phep: Theo Nghị quyết 202/2025/QH15
+    ghi_chu: Có merger_details và danh sách đơn vị cũ hợp thành
+
+  - ma: tinhthanhpho
+    ten: tinhthanhpho.com
+    url: https://www.tinhthanhpho.com/api/v1/
+    lop: danh_muc
+    muc: C
+    giay_phep: Data version 2026.10.x
+    ghi_chu: Diện tích, dân số, mã bưu chính, trụ sở, toạ độ tâm tỉnh
+
+  - ma: qd_19_2025
+    ten: Quyết định 19/2025/QĐ-TTg
+    url: https://datafiles.chinhphu.vn/cpp/files/vbpq/2025/7/19ttg.signed.pdf
+    lop: danh_muc
+    muc: A
+    giay_phep: Văn bản nhà nước
+    ghi_chu: Bảng mã ĐVHC cấp tỉnh (Phụ lục I) và cấp xã (Phụ lục II) — nguồn chân lý
+
+  - ma: nq_ubtvqh_sap_xep
+    ten: Nghị quyết của UBTVQH về sắp xếp ĐVHC cấp huyện, cấp xã
+    url: https://chinhphu.vn/van-ban-quy-pham-phap-luat/
+    lop: danh_muc
+    muc: A
+    giay_phep: Văn bản nhà nước
+    ghi_chu: Quy định số lượng, tên gọi, diện tích (km²), dân số và trụ sở sau sáp nhập
+
+  # ============================================================
+  # TẦNG 2: CƠ SỞ DỮ LIỆU CHUYÊN NGÀNH TOÀN QUỐC
+  # ============================================================
+  - ma: dichvucong_gov
+    ten: Cổng Dịch vụ công Quốc gia
+    url: https://dichvucong.gov.vn
+    lop: hanh_chinh
+    muc: A
+    giay_phep: Chính phủ Việt Nam
+    ghi_chu: Danh bạ cơ quan một cửa, hotline, email công vụ cấp xã/phường toàn quốc
+
+  - ma: ocop_gov
+    ten: Cổng Thông tin Sản phẩm OCOP Quốc gia
+    url: https://ocop.gov.vn
+    lop: kinh_te
+    muc: A
+    giay_phep: Bộ Nông nghiệp & Phát triển Nông thôn
+    ghi_chu: Danh bạ toàn quốc sản phẩm OCOP 3-5 sao phân loại theo từng xã/phường/huyện
+
+  - ma: disan_gov
+    ten: Cục Di sản Văn hóa (Bộ VHTTDL)
+    url: https://disanvanhoa.gov.vn
+    lop: van_hoa
+    muc: A
+    giay_phep: Bộ Văn hóa, Thể thao và Du lịch
+    ghi_chu: Danh mục Di tích quốc gia đặc biệt, Di tích quốc gia, Di sản văn hóa phi vật thể
+
+  - ma: langnghe_gov
+    ten: CSDL Làng nghề truyền thống Việt Nam
+    url: https://sonnptnt.gov.vn
+    lop: kinh_te
+    muc: A
+    giay_phep: Theo Nghị định 52/2018/NĐ-CP
+    ghi_chu: Danh mục làng nghề truyền thống được công nhận toàn quốc
+
+  - ma: photon_osm
+    ten: Photon (OpenStreetMap)
+    url: https://photon.komoot.io/api/
+    lop: toa_do
+    muc: C
+    giay_phep: ODbL — bắt buộc ghi nguồn
+    ghi_chu: Toạ độ tâm điểm (centroid) theo tên đơn vị hành chính
+
+  - ma: osm_overpass
+    ten: OpenStreetMap Overpass Boundary API
+    url: https://overpass-api.de/api/interpreter
+    lop: toa_do
+    muc: C
+    giay_phep: ODbL
+    ghi_chu: Đa giác ranh giới hành chính GeoJSON cấp xã/phường
+
+  - ma: wikipedia_vi
+    ten: Wikipedia tiếng Việt
+    url: https://vi.wikipedia.org/w/api.php
+    lop: van_ban
+    muc: C
+    giay_phep: CC BY-SA 4.0
+    ghi_chu: Bóc giới thiệu, lịch sử, tên cũ địa danh
+
+  # ============================================================
+  # TẦNG 3: CƠ SỞ DỮ LIỆU & CỔNG THÔNG TIN ĐỊA PHƯƠNG HẢI PHÒNG
+  # ============================================================
+  - ma: de_an_sap_xep_hp
+    ten: Đề án sắp xếp ĐVHC cấp huyện, cấp xã TP Hải Phòng
+    url: https://sonoivu.haiphong.gov.vn
+    lop: hanh_chinh
+    muc: A
+    giay_phep: UBND TP Hải Phòng / Sở Nội vụ
+    ghi_chu: Chuẩn 100% diện tích, dân số, trụ sở làm việc của 114 đơn vị sau sáp nhập
+
+  - ma: haiphong_gov
+    ten: Cổng Thông tin điện tử TP Hải Phòng
+    url: https://haiphong.gov.vn
+    lop: van_ban
+    muc: A
+    giay_phep: UBND TP Hải Phòng
+    ghi_chu: Cổng tổng hợp, tin tức chính quyền, đề án sáp nhập
+
+  - ma: dichvucong_hp
+    ten: Cổng Dịch vụ công TP Hải Phòng
+    url: https://dichvucong.haiphong.gov.vn
+    lop: hanh_chinh
+    muc: A
+    giay_phep: UBND TP Hải Phòng
+    ghi_chu: Trụ sở một cửa, hotline, email công vụ cấp xã
+
+  - ma: sovhtt_hp
+    ten: Sở Văn hóa và Thể thao TP Hải Phòng
+    url: https://sovhtt.haiphong.gov.vn
+    lop: van_hoa
+    muc: A
+    giay_phep: Sở VHTT Hải Phòng
+    ghi_chu: Danh mục di tích xếp hạng cấp quốc gia đặc biệt, quốc gia, thành phố & lễ hội
+
+  - ma: sonnptnt_hp
+    ten: Sở Nông nghiệp & PTNT TP Hải Phòng (OCOP Hải Phòng)
+    url: https://sonnptnt.haiphong.gov.vn
+    lop: kinh_te
+    muc: A
+    giay_phep: Sở NN&PTNT Hải Phòng
+    ghi_chu: Danh bạ sản phẩm OCOP TP Hải Phòng phân theo xã/phường
+
+  - ma: socongthuong_hp
+    ten: Sở Công Thương TP Hải Phòng
+    url: https://socongthuong.haiphong.gov.vn
+    lop: kinh_te
+    muc: A
+    giay_phep: Sở Công Thương Hải Phòng
+    ghi_chu: Danh mục làng nghề truyền thống được UBND TP Hải Phòng công nhận
+
+  - ma: baohaiphong
+    ten: Báo Hải Phòng điện tử
+    url: https://baohaiphong.vn
+    lop: bao_chi
+    muc: B
+    giay_phep: Thành ủy Hải Phòng
+    ghi_chu: Địa chí, lịch sử - văn hoá, con người, tin tức kinh tế xã hội địa phương
+
+  - ma: thhp
+    ten: Đài Phát thanh và Truyền hình Hải Phòng
+    url: https://thhp.vn
+    lop: bao_chi
+    muc: B
+    giay_phep: Đài PT-TH Hải Phòng
+    ghi_chu: Tin tức, phóng sự văn hóa địa phương
+
+  - ma: haiphong_dcs
+    ten: Cổng TTĐT Đảng bộ TP Hải Phòng
+    url: https://haiphong.dcs.vn
+    lop: van_ban
+    muc: A
+    giay_phep: Thành ủy Hải Phòng
+    ghi_chu: Lịch sử đảng bộ, tư liệu địa chí
+
+  - ma: cong_quan_huyen_hp
+    ten: Hệ thống Cổng TTĐT quận/huyện/TP Hải Phòng
+    url: (động *.haiphong.gov.vn)
+    lop: van_ban
+    muc: A
+    giay_phep: UBND các quận/huyện Hải Phòng
+    ghi_chu: thuynguyen, hongbang, lechan, ngoquyen, haian, kienan, doson, duongkinh, anduong, anlao, kienthuy, tienlang, vinhbao, cathai, bachlongvi
+
+  - ma: haiduong_gov
+    ten: Cổng TTĐT tỉnh Hải Dương (khu vực sáp nhập)
+    url: https://haiduong.gov.vn
+    lop: van_ban
+    muc: A
+    giay_phep: UBND tỉnh Hải Dương
+    ghi_chu: Cổng tỉnh và các huyện chilinh, kinhmon, namsach, camgiang, binhgiang, gialoc, tuky, ninhgiang, thanhmien, kimthanh, thanhha
+
+  - ma: baohaiduong
+    ten: Báo Hải Dương điện tử (khu vực sáp nhập)
+    url: https://baohaiduong.vn
+    lop: bao_chi
+    muc: B
+    giay_phep: Tỉnh ủy Hải Dương
+    ghi_chu: Báo chí địa phương cho các xã/phường thuộc khu vực hợp nhất
+
+  - ma: govvn
+    ten: Cổng thông tin điện tử cấp xã/phường
+    url: (động)
+    lop: van_ban
+    muc: A
+    giay_phep: Theo điều khoản của từng cổng
+    ghi_chu: Trang riêng của từng đơn vị cơ sở
+
+# Danh sách miền được ưu tiên khi lọc kết quả tìm kiếm
+mien_uu_tien:
+  A:
+    - ".gov.vn"
+    - ".dcs.vn"
+    - ".chinhphu.vn"
+    - ".vnanet.vn"
+  B:
+    - "nhandan.vn"
+    - "vnanet.vn"
+    - "baochinhphu.vn"
+    - "vov.vn"
+    - "vnexpress.net"
+    - "dantri.com.vn"
+    - "baohaiphong.vn"
+    - "thhp.vn"
+    - "baohaiduong.vn"
+    - "hanoimoi.com.vn"
+    - "baoquangninh.vn"
+  C:
+    - "wikipedia.org"
+    - "openstreetmap.org"
+
+# Danh sách miền rác/nước ngoài BỊ CHẶN TUYỆT ĐỐI (Blacklist)
+mien_chan_tuyet_doi:
+  - "youtube.com"
+  - "youtu.be"
+  - "google.com"
+  - "baidu.com"
+  - "facebook.com"
+  - "threads.net"
+  - "instagram.com"
+  - "twitter.com"
+  - "x.com"
+  - "yahoo.co.jp"
+  - "poki.jp"
+  - "sftourismtips.com"
+  - "chillfont.vn"
+  - "amazon.com"
+  - "tiktok.com"
+
+# Giới hạn tần suất (giây) giữa hai lần gọi cùng một nguồn
+nhip_do:
+  tinhthanhpho: 1.0
+  govvn: 2.0
+  dichvucong_gov: 2.0
+  ocop_gov: 1.5
+  disan_gov: 1.5
+  photon_osm: 1.0
+  mac_dinh: 0.5
+
+# Chống bị chặn / captcha
+chong_chan:
+  he_so_jitter: 1.0
+  xoay_user_agent: true
+  proxy:
+    tep: du_lieu/proxy.txt
+    bat: false
+    nguon_tai:
+      - https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt
+      - https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt
+      - https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/http.txt
+    ghi_chu: Proxy công khai không đáng tin — chỉ dùng đọc trang công khai, không gửi dữ liệu nội bộ.

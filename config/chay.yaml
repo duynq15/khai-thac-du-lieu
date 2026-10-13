@@ -1,0 +1,54 @@
+# Hồ sơ chạy khai thác — cấu hình chung, không phải nguồn.
+# Đổi ở đây thay vì sửa mã. Dòng lệnh vẫn ghi đè được (--nhanh, --dung-proxy, --gioi-han…).
+
+phien_ban: 2026-10-12
+
+# Phạm vi mặc định
+pham_vi:
+  toan_quoc: true          # true = cả 34 tỉnh và 3.321 xã/phường
+  tinh: []                 # chỉ dùng khi toan_quoc: false, ví dụ ["01", "79"]
+  cap: xa                  # xa | tinh | thon
+
+# Nhóm dữ liệu khai thác cho toàn quốc (theo thứ tự chạy)
+nhom_du_lieu:
+  - thong_tin_chung
+  - sap_xep_2025
+
+# Chia lô để nghỉ giữa chừng, tránh gọi liên tục bị chặn
+lo:
+  so_don_vi_moi_lo: 150
+  nghi_giua_lo_giay: 60
+  bo_qua_da_co: true       # chạy tiếp: bỏ đơn vị đã có kết quả đạt
+  luu_tien_trinh: du_lieu/tien_trinh.json
+
+# Cách gọi mạng
+mang:
+  dung_proxy: false        # true = xoay proxy ngay từ đầu
+  proxy_tu_dong: true      # gặp chặn (403/429/captcha) thì tự tải + bật proxy ở luồng nền
+  he_so_jitter: 1.0        # 1.0 chạy thật; 0.15 chỉ khi phát triển (cờ --nhanh)
+  thu_lai: 4
+  timeout_giay: 30
+  giay_nghi_gov: 2.0       # nhịp tối thiểu cho tên miền *.gov.vn
+  gio_moi_don_vi: 420      # báo thức cứng mỗi xã: > 3 nguồn × 90s LLM + tải trang
+
+# Trích xuất bằng LLM nội bộ
+llm:
+  dung: true
+  nha_cung_cap: ollama          # ollama | openai (dịch vụ OpenAI-compatible)
+  model: qwen2.5:3b-instruct    # 3B vừa VRAM 4GB: ~48 tok/s (7B chỉ 7 tok/s)
+  endpoint: http://localhost:11434
+  base_url: ""                  # khi nha_cung_cap: openai, ví dụ https://api.openai.com/v1
+  api_key: ""                   # hoặc đặt biến môi trường LLM_API_KEY
+  chi_khi_thieu: true           # chỉ gọi LLM khi quy tắc không bóc được
+
+# Tìm kiếm: dùng API khi có khoá (ổn định, không bị chặn), không có thì scrape.
+# Khoá đọc từ biến môi trường BRAVE_API_KEY trước, rồi tới đây.
+tim_kiem:
+  brave_api_key: ""        # dán khoá vào đây, hoặc export BRAVE_API_KEY=...
+  dung_api: true
+
+# Bàn giao
+ban_giao:
+  json: true
+  excel: true
+  thu_muc: du_lieu/ban_giao

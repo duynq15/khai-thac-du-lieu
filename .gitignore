@@ -1,0 +1,7 @@
+.venv/
+du_lieu/
+__pycache__/
+*.pyc
+logs/
+*.tgz
+.env

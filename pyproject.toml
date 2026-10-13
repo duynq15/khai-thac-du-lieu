@@ -1,0 +1,31 @@
+[project]
+name = "khai-thac-du-lieu"
+version = "0.1.0"
+description = "Bộ khai thác dữ liệu hành chính – văn hoá – tin tức cho Xã Phường Việt Nam"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "httpx>=0.27",
+    "beautifulsoup4>=4.12",
+    "lxml>=5.2",
+    "pyyaml>=6.0",
+    "openpyxl>=3.1",
+]
+
+[project.optional-dependencies]
+browser = ["playwright>=1.44"]
+pdf = ["pdfplumber>=0.11"]
+
+[project.scripts]
+khai-thac = "khai_thac.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["khai_thac"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
