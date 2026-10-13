@@ -248,8 +248,12 @@ class Kho:
         """Tra mã xã từ tên trong nguồn ('Đông Anh', 'Xã Đông Anh', 'phường X')."""
         from .text import chuan_hoa
 
+        import re as _re
+
         ten = str(ten or "").strip()
-        for k in (ten, "Xã " + ten, "Phường " + ten):
+        # Nguồn hay ghi sai tiền tố (báo ghi "Phường X" cho "Xã X") → thử cả phần tên không tiền tố
+        rut = _re.sub(r"^(xã|phường|thị trấn|đặc khu)\s+", "", ten, flags=_re.IGNORECASE)
+        for k in (ten, "Xã " + ten, "Phường " + ten, rut):
             ma = ban_do.get(chuan_hoa(k))
             if ma:
                 return ma

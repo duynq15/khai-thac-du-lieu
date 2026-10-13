@@ -28,11 +28,8 @@ PHIEN_BAN_SCHEMA = "1.0"
 _KY_TU_XAU = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 _TEN_SHEET_XAU = re.compile(r"[\\/?*\[\]:]")
 
-# Nguồn nhập tay chưa có văn bản gốc đối chiếu (dữ liệu HP gõ tay cũ): giữ trong JSON (cho_duyet),
-# KHÔNG hiển thị trong Excel cho người đọc.
+# Nguồn nhập tay chưa có văn bản gốc đối chiếu (dữ liệu HP gõ tay cũ): đánh dấu da_kiem_chung = false
 NGUON_CHUA_KIEM = {"nhap_tay_de_xuat", "de_an_sap_xep_hp"}
-# Đã có ở cột cố định của sheet tỉnh → không lặp lại
-COT_CO_DINH = {"ten", "loai", "ma_dvhc", "truc_thuoc_tinh"}
 
 TRANG_THAI_NHAN = {"dat": "Đạt", "cho_duyet": "Chờ duyệt", "loi": "Lỗi", "thieu": "Thiếu"}
 MUC_NHAN = {"A": "A – chính thống", "B": "B – báo chí/tổng hợp", "C": "C – tham khảo"}
@@ -101,8 +98,8 @@ def _gia_tri_json(k: KetQua) -> dict:
     }
 
 
-def xuat_json(ds: list[KetQua], duong_dan: Path | str | None = None) -> Path:
-    """JSON bàn giao cho hệ thống.
+def dung_goi(ds: list[KetQua]) -> dict:
+    """Gói bàn giao — NGUỒN DUY NHẤT cho cả JSON và Excel (Excel chỉ trình bày lại gói này).
 
     Cấu trúc (phiên bản schema 1.0):
       meta      – thời điểm xuất, phiên bản, số lượng, quy ước
@@ -161,6 +158,12 @@ def xuat_json(ds: list[KetQua], duong_dan: Path | str | None = None) -> Path:
         "nguon": nguon,
         "don_vi": don_vi,
     }
+    return goi
+
+
+def xuat_json(ds: list[KetQua], duong_dan: Path | str | None = None, goi: dict | None = None) -> Path:
+    """JSON bàn giao cho hệ thống (cấu trúc: xem dung_goi và BAN_GIAO.md)."""
+    goi = goi or dung_goi(ds)
     duong_dan = Path(duong_dan) if duong_dan else (
         GOC_BAN_GIAO / f"ban_giao_{datetime.now():%Y%m%d_%H%M%S}.json")
     duong_dan.parent.mkdir(parents=True, exist_ok=True)
@@ -213,7 +216,8 @@ def _sheet_huong_dan(wb: Workbook, xuat_luc: str, so_xa: int) -> None:
         ["Cách đọc"],
         ["• Sheet \"Tổng hợp\": mỗi tỉnh/thành một dòng – số xã và mức độ đầy đủ."],
         ["• Mỗi sheet tỉnh: mỗi xã/phường một dòng, mỗi thông tin một cột (tên cột tiếng Việt)."],
-        ["• Ô trống = chưa có thông tin. Ô nền vàng = cần cán bộ duyệt lại trước khi dùng."],
+        ["• Ô trống = chưa có thông tin. Nền vàng = cần cán bộ duyệt (chờ duyệt/chưa kiểm chứng). Nền cam = không đạt kiểm tra."],
+        ["• File Excel trình bày đúng dữ liệu trong file JSON cùng lần xuất (cùng đơn vị, cùng trường, cùng giá trị)."],
         ["• Sheet \"Nguồn & bằng chứng\": với từng thông tin – lấy từ đâu (đường link), câu gốc làm bằng chứng."],
         [],
         ["Độ tin cậy của nguồn"],
@@ -228,142 +232,134 @@ def _sheet_huong_dan(wb: Workbook, xuat_luc: str, so_xa: int) -> None:
     for d in dong:
         ws.append(d)
     ws["A1"].font = Font(bold=True, size=14, color="1F4E79")
-    for o in ("A4", "A10", "A15"):
+    for o in ("A4", "A11", "A16"):
         ws[o].font = Font(bold=True)
     ws.column_dimensions["A"].width = 110
 
 
-def _co_gia_tri(k: KetQua | None) -> bool:
-    """Ô có hiển thị cho người đọc: đạt/chờ duyệt, có giá trị, nguồn đã kiểm chứng."""
-    return (k is not None and k.trang_thai in ("dat", "cho_duyet") and k.gia_tri not in (None, "", [], {})
-            and k.nguon_ma not in NGUON_CHUA_KIEM)
+_NEN_LOI = PatternFill("solid", fgColor="F8CBAD")    # không đạt kiểm tra
+CAP_NHAN = {"tinh": "Tỉnh/Thành phố", "xa": "Xã/Phường", "thon": "Thôn/Tổ dân phố"}
+LOAI_NHAN = {"xa": "Xã", "phuong": "Phường", "dac_khu": "Đặc khu", "tinh": "Tỉnh", "thanh_pho": "Thành phố",
+             "thon": "Thôn"}
 
 
-def _sheet_tong_hop(wb: Workbook, theo_tinh: dict, truong_xa: list[dict]) -> None:
+def _co(v: dict) -> bool:
+    return v["gia_tri"] is not None
+
+
+def _sheet_tong_hop(wb: Workbook, goi: dict) -> None:
+    """Đếm đúng như trong JSON: một trường 'có' khi gia_tri khác null; tách theo trạng thái."""
     ws = wb.create_sheet("Tổng hợp")
-    nhom_ds = list(dict.fromkeys(t["nhan_nhom"] for t in truong_xa))
-    dau = ["Mã", "Tỉnh/Thành phố", "Số xã/phường", "Tỉ lệ thông tin đã có"] + [f"{n} (%)" for n in nhom_ds]
+    dau = ["Cấp", "Mã tỉnh", "Tỉnh/Thành phố", "Số đơn vị", "Ô có giá trị", "Đạt", "Chờ duyệt", "Lỗi",
+           "Tổng ô", "Tỉ lệ đạt"]
     ws.append(dau)
     for c in range(1, len(dau) + 1):
-        ws.cell(row=1, column=c).font = _CHU_DAU
-        ws.cell(row=1, column=c).fill = _NEN_DAU
-        ws.cell(row=1, column=c).alignment = Alignment(wrap_text=True, vertical="center")
-    for (ma_tinh, ten_tinh), xa in sorted(theo_tinh.items()):
-        tong = co = 0
-        theo_nhom = {n: [0, 0] for n in nhom_ds}
-        for _, ks in xa:
-            for t in truong_xa:
-                ok = _co_gia_tri(ks.get(t["khoa"]))
-                tong += 1
-                co += ok
-                theo_nhom[t["nhan_nhom"]][0] += ok
-                theo_nhom[t["nhan_nhom"]][1] += 1
-        ws.append([ma_tinh, ten_tinh, len(xa), f"{co / tong:.0%}" if tong else "-"]
-                  + [f"{a / b:.0%}" if b else "-" for a, b in theo_nhom.values()])
-    for i, rong in enumerate([6, 22, 12, 14] + [16] * len(nhom_ds), start=1):
-        ws.column_dimensions[get_column_letter(i)].width = rong
-    ws.row_dimensions[1].height = 45
-    ws.freeze_panes = "C2"
+        ws.cell(row=1, column=c).font, ws.cell(row=1, column=c).fill = _CHU_DAU, _NEN_DAU
+    gom: dict[tuple, list] = {}
+    for u in goi["don_vi"]:
+        gom.setdefault((u["cap"], u["tinh_ma"] or "", u["tinh_ten"] or u["ten"]), []).append(u)
+    for (cap, mt, tt), ds in sorted(gom.items(), key=lambda x: (["tinh", "xa", "thon"].index(x[0][0]), x[0][1])):
+        o = [v for u in ds for v in u["truong"].values()]
+        dem = {s_: sum(1 for v in o if v["trang_thai"] == s_ and _co(v)) for s_ in ("dat", "cho_duyet", "loi")}
+        ws.append([CAP_NHAN[cap], mt, tt, len(ds), sum(_co(v) for v in o), dem["dat"], dem["cho_duyet"],
+                   dem["loi"], len(o), f"{dem['dat'] / len(o):.0%}" if o else "-"])
+    for i, w in enumerate([14, 8, 24, 10, 12, 8, 10, 8, 9, 10], start=1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+    ws.freeze_panes = "D2"
 
 
-def _sheet_tinh(wb: Workbook, ten_tinh: str, xa: list, truong_xa: list[dict]) -> None:
-    ws = wb.create_sheet(_TEN_SHEET_XAU.sub(" ", ten_tinh)[:31])
-    co_dinh = ["Mã xã", "Tên xã/phường", "Loại"]
-    # Dòng 1: nhóm (gộp ô), dòng 2: tên cột
-    ws.append([""] * len(co_dinh) + [t["nhan_nhom"] for t in truong_xa])
-    ws.append(co_dinh + [t["nhan"] for t in truong_xa])
+def _sheet_don_vi(wb: Workbook, ten_sheet: str, ds: list[dict], truong: list[dict]) -> None:
+    """Mỗi đơn vị một dòng; mỗi trường trong schema một cột — đúng khoá và giá trị như JSON."""
+    ws = wb.create_sheet(_TEN_SHEET_XAU.sub(" ", ten_sheet)[:31])
+    co_dinh = ["Mã", "Tên đơn vị", "Loại", "Thuộc"]
+    ws.append([""] * len(co_dinh) + [t["nhan_nhom"] for t in truong])
+    ws.append(co_dinh + [t["nhan"] for t in truong])
     c = len(co_dinh) + 1
-    for nhom in dict.fromkeys(t["nhan_nhom"] for t in truong_xa):
-        n = sum(1 for t in truong_xa if t["nhan_nhom"] == nhom)
+    for nhom in dict.fromkeys(t["nhan_nhom"] for t in truong):
+        n = sum(1 for t in truong if t["nhan_nhom"] == nhom)
         if n > 1:
             ws.merge_cells(start_row=1, start_column=c, end_row=1, end_column=c + n - 1)
         o = ws.cell(row=1, column=c)
         o.font, o.fill, o.alignment = Font(bold=True, color="1F4E79"), _NEN_NHOM, Alignment(horizontal="center")
         c += n
-    for col in range(1, len(co_dinh) + len(truong_xa) + 1):
+    for col in range(1, len(co_dinh) + len(truong) + 1):
         o = ws.cell(row=2, column=col)
-        o.font, o.fill = _CHU_DAU, _NEN_DAU
-        o.alignment = Alignment(wrap_text=True, vertical="center")
+        o.font, o.fill, o.alignment = _CHU_DAU, _NEN_DAU, Alignment(wrap_text=True, vertical="center")
 
-    loai_nhan = {"xa": "Xã", "phuong": "Phường", "dac_khu": "Đặc khu"}
-    for ma, ks in sorted(xa, key=lambda x: x[0]):
-        ten = next((k.don_vi_ten for k in ks.values()), "")
-        loai = ks.get("loai").gia_tri if ks.get("loai") else None
-        hang = [ma, ten, loai_nhan.get(loai, loai)]
-        cho = []
-        for i, t in enumerate(truong_xa):
-            k = ks.get(t["khoa"])
-            if not _co_gia_tri(k):
-                hang.append(None)
-                continue
-            hang.append(_sach_o(_hien_thi(k.gia_tri, t["kieu"])))
-            if k.trang_thai == "cho_duyet" or k.canh_bao:
-                cho.append(len(co_dinh) + i + 1)
+    for u in sorted(ds, key=lambda x: x["ma"]):
+        hang = [u["ma"], u["ten"], LOAI_NHAN.get(u["loai"], u["loai"]), u["tinh_ten"] if u["cap"] != "tinh" else None]
+        to: list[tuple[int, PatternFill]] = []
+        for i, t in enumerate(truong):
+            v = u["truong"][t["khoa"]]
+            hang.append(_sach_o(_hien_thi(v["gia_tri"], t["kieu"])))
+            if _co(v) and v["trang_thai"] == "loi":
+                to.append((len(co_dinh) + i + 1, _NEN_LOI))
+            elif _co(v) and (v["trang_thai"] == "cho_duyet" or v["canh_bao"]
+                             or (v["nguon"] and not v["nguon"]["da_kiem_chung"])):
+                to.append((len(co_dinh) + i + 1, _NEN_CHO))
         ws.append(hang)
         r = ws.max_row
-        for col in cho:
-            ws.cell(row=r, column=col).fill = _NEN_CHO
+        for col, nen in to:
+            ws.cell(row=r, column=col).fill = nen
         for col in range(1, len(hang) + 1):
             ws.cell(row=r, column=col).alignment = Alignment(wrap_text=True, vertical="top")
 
     rong = {"van_ban": 28, "ban_ghi": 40, "danh_sach": 30, "so": 12, "ngay": 12, "ma_so": 10,
             "dien_thoai": 16, "email": 26, "url": 28, "toa_do": 20, "anh": 20}
-    for i, w in enumerate([8, 24, 9] + [rong.get(t["kieu"], 20) for t in truong_xa], start=1):
+    for i, w in enumerate([8, 24, 9, 18] + [rong.get(t["kieu"], 20) for t in truong], start=1):
         ws.column_dimensions[get_column_letter(i)].width = w
     ws.row_dimensions[2].height = 45
     ws.freeze_panes = "C3"
-    ws.auto_filter.ref = f"A2:{get_column_letter(len(co_dinh) + len(truong_xa))}{ws.max_row}"
+    ws.auto_filter.ref = f"A2:{get_column_letter(len(co_dinh) + len(truong))}{ws.max_row}"
 
 
-def _sheet_nguon(wb: Workbook, theo_tinh: dict, truong_xa: list[dict]) -> None:
+def _sheet_nguon(wb: Workbook, goi: dict) -> None:
+    """Mọi ô có giá trị trong JSON (kể cả lỗi/chờ duyệt) — một dòng, kèm nguồn và bằng chứng."""
     ws = wb.create_sheet("Nguồn & bằng chứng")
-    dau = ["Tỉnh/Thành phố", "Mã xã", "Tên xã/phường", "Thông tin", "Giá trị", "Trạng thái",
-           "Độ tin nguồn", "Tên nguồn", "Đường link", "Câu gốc (bằng chứng)", "Năm số liệu", "Ghi chú"]
+    dau = ["Tỉnh/Thành phố", "Mã", "Tên đơn vị", "Thông tin", "Giá trị", "Trạng thái", "Độ tin nguồn",
+           "Đã kiểm chứng", "Tên nguồn", "Đường link", "Câu gốc (bằng chứng)", "Năm số liệu", "Lý do lỗi / cảnh báo"]
     ws.append(dau)
     for c in range(1, len(dau) + 1):
-        ws.cell(row=1, column=c).font = _CHU_DAU
-        ws.cell(row=1, column=c).fill = _NEN_DAU
-    nhan = {t["khoa"]: (t["nhan"], t["kieu"]) for t in truong_xa}
-    for (_, ten_tinh), xa in sorted(theo_tinh.items()):
-        for ma, ks in sorted(xa, key=lambda x: x[0]):
-            for khoa, (ten_truong, kieu) in nhan.items():
-                k = ks.get(khoa)
-                if not _co_gia_tri(k) or k.nguon_ma == "danh_muc":
-                    continue
-                ws.append([_sach_o(x) for x in [
-                    ten_tinh, ma, k.don_vi_ten, ten_truong, _hien_thi(k.gia_tri, kieu),
-                    TRANG_THAI_NHAN.get(k.trang_thai, k.trang_thai), MUC_NHAN.get(k.nguon_muc, k.nguon_muc),
-                    k.nguon_ten, k.nguon_url, k.trich_doan, k.nam_du_lieu,
-                    "; ".join(filter(None, [k.ly_do_loi, *k.canh_bao])) or None,
-                ]])
-    for i, w in enumerate([16, 8, 22, 22, 36, 11, 20, 28, 40, 60, 10, 30], start=1):
+        ws.cell(row=1, column=c).font, ws.cell(row=1, column=c).fill = _CHU_DAU, _NEN_DAU
+    for u in goi["don_vi"]:
+        for t in goi["schema"][u["cap"]]:
+            v = u["truong"][t["khoa"]]
+            if not _co(v):
+                continue
+            n = v["nguon"] or {}
+            ws.append([_sach_o(x) for x in [
+                u["tinh_ten"] or u["ten"], u["ma"], u["ten"], t["nhan"], _hien_thi(v["gia_tri"], t["kieu"]),
+                TRANG_THAI_NHAN.get(v["trang_thai"], v["trang_thai"]), MUC_NHAN.get(n.get("muc"), n.get("muc")),
+                ("Có" if n.get("da_kiem_chung") else "Chưa") if n else None,
+                n.get("ten"), n.get("url"), v["trich_doan"], v["nam_du_lieu"],
+                "; ".join(filter(None, [v["ly_do_loi"], *v["canh_bao"]])) or None,
+            ]])
+            if v["trang_thai"] == "loi":
+                ws.cell(row=ws.max_row, column=6).fill = _NEN_LOI
+    for i, w in enumerate([16, 8, 22, 22, 36, 11, 20, 12, 28, 40, 60, 10, 30], start=1):
         ws.column_dimensions[get_column_letter(i)].width = w
     ws.freeze_panes = "D2"
-    ws.auto_filter.ref = f"A1:L{ws.max_row}"
+    ws.auto_filter.ref = f"A1:M{ws.max_row}"
 
 
-def xuat_excel(ds: list[KetQua], duong_dan: Path | str | None = None) -> Path:
-    """Excel cho người đọc: Hướng dẫn · Tổng hợp · mỗi tỉnh một sheet · Nguồn & bằng chứng."""
-    gom = _gom_don_vi(ds)
-    dm = _danh_muc_don_vi()
-    truong_xa = [t for t in _cac_truong("xa") if t["khoa"] not in COT_CO_DINH]
+def xuat_excel(ds: list[KetQua], duong_dan: Path | str | None = None, goi: dict | None = None) -> Path:
+    """Excel trình bày ĐÚNG gói JSON: Hướng dẫn · Tổng hợp · một sheet mỗi tỉnh (đơn vị cấp xã)
+    · sheet cấp tỉnh/thôn nếu gói có · Nguồn & bằng chứng (mọi ô có giá trị)."""
+    goi = goi or dung_goi(ds)
+    theo: dict[tuple, list] = {}
+    for u in goi["don_vi"]:
+        khoa = ("0", "Cấp tỉnh") if u["cap"] == "tinh" else (
+            ("2" + (u["tinh_ma"] or ""), f"Thôn – {u['tinh_ten']}") if u["cap"] == "thon"
+            else ("1" + (u["tinh_ma"] or "zz"), u["tinh_ten"] or "(không rõ tỉnh)"))
+        theo.setdefault(khoa, []).append(u)
 
-    theo_tinh: dict[tuple, list] = {}
-    for ma, ks in gom.items():
-        info = dm.get(ma) or {}
-        if _cap_cua(info.get("loai")) != "xa":
-            continue   # ponytail: Excel chỉ cấp xã; cấp tỉnh/thôn xem trong JSON
-        theo_tinh.setdefault((info.get("tinh_ma") or "zz", info.get("tinh_ten") or "(không rõ tỉnh)"),
-                             []).append((ma, ks))
-
-    xuat_luc = datetime.now().strftime("%d/%m/%Y %H:%M")
     wb = Workbook()
     wb.remove(wb.active)
-    _sheet_huong_dan(wb, xuat_luc, sum(len(v) for v in theo_tinh.values()))
-    _sheet_tong_hop(wb, theo_tinh, truong_xa)
-    for (_, ten_tinh), xa in sorted(theo_tinh.items()):
-        _sheet_tinh(wb, ten_tinh, xa, truong_xa)
-    _sheet_nguon(wb, theo_tinh, truong_xa)
+    _sheet_huong_dan(wb, datetime.now().strftime("%d/%m/%Y %H:%M"), len(goi["don_vi"]))
+    _sheet_tong_hop(wb, goi)
+    for (_, ten), ds_u in sorted(theo.items()):
+        _sheet_don_vi(wb, ten, ds_u, goi["schema"][ds_u[0]["cap"]])
+    _sheet_nguon(wb, goi)
 
     duong_dan = Path(duong_dan) if duong_dan else (
         GOC_BAN_GIAO / f"ban_giao_{datetime.now():%Y%m%d_%H%M%S}.xlsx")

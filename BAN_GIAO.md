@@ -1,9 +1,11 @@
 # Bàn giao dữ liệu khai thác
 
-Xuất: `uv run khai-thac xuat --dinh-dang json` và `--dinh-dang excel` → `du_lieu/ban_giao/ban_giao_<thời điểm>.{json,xlsx}`.
+Xuất: `uv run khai-thac xuat` (mặc định cả hai, cùng một gói dữ liệu) → `du_lieu/ban_giao/ban_giao_<thời điểm>.{json,xlsx}`.
 
 - **Excel** – cho người đọc: sheet *Hướng dẫn*, *Tổng hợp* (độ đầy đủ theo tỉnh), mỗi tỉnh một sheet
-  (mỗi xã một dòng, cột tên tiếng Việt, ô vàng = cần duyệt), *Nguồn & bằng chứng* (link + câu gốc).
+  (mỗi xã một dòng, cột tên tiếng Việt, ô vàng = cần duyệt, ô cam = lỗi), *Nguồn & bằng chứng*
+  (mỗi ô có giá trị trong JSON là một dòng: link + câu gốc). Excel trình bày đúng giá trị của JSON.
+- **Danh sách tách sẵn**: `du_lieu/nguon_tay/*.json` nạp bằng `uv run khai-thac nap-tay [--ma ...]`.
 - **JSON** – cho hệ thống tiếp nhận. Mô tả dưới đây.
 
 ## Cấu trúc JSON (schema 1.0)

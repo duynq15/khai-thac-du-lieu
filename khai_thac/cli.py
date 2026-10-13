@@ -122,8 +122,12 @@ def _chay(args, *, tinh_ma: str | None, nhom: list[str] | None) -> int:
         ma=pham_vi, ten=getattr(args, "ten", None), tinh_ten=getattr(args, "tinh", None),
         cap=getattr(args, "cap", "xa"),
     )
-    for dd in args.xuat or []:
-        print(dd.upper() + ":", {"json": xuat_json, "excel": xuat_excel}[dd](kq))
+    if args.xuat:
+        from .xuat import dung_goi
+
+        goi = dung_goi(kq)   # một gói cho cả JSON và Excel → hai tệp luôn khớp
+        for dd in args.xuat:
+            print(dd.upper() + ":", {"json": xuat_json, "excel": xuat_excel}[dd](kq, goi=goi))
     print(f"Xong: {len(kq)} trường, {sum(1 for k in kq if k.trang_thai == 'dat')} đạt.")
     kho.dong()
     return 0
@@ -140,10 +144,13 @@ def cmd_xuat(args) -> int:
     if not kq:
         print("Không có kết quả nào khớp.")
         return 0
-    if args.dinh_dang == "excel":
-        print("Excel:", xuat_excel(kq))
-    else:
-        print("JSON:", xuat_json(kq))
+    from .xuat import dung_goi
+
+    goi = dung_goi(kq)   # một gói cho cả JSON và Excel → hai tệp luôn khớp
+    if args.dinh_dang in ("excel", "ca_hai"):
+        print("Excel:", xuat_excel(kq, goi=goi))
+    if args.dinh_dang in ("json", "ca_hai"):
+        print("JSON:", xuat_json(kq, goi=goi))
     kho.dong()
     return 0
 
@@ -278,6 +285,18 @@ def cmd_nap_llm(args) -> int:
     return 0
 
 
+def cmd_nap_tay(args) -> int:
+    """Nạp danh sách đã tách sẵn trong du_lieu/nguon_tay/*.json."""
+    from .nguon import tay
+
+    kho = _kho(args)
+    for r in tay.nap_tat_ca(kho, args.ma):
+        print(f"  {r['tep']}: {r['so_truong']} trường · {r['so_xa']} xã"
+              + (f" · không khớp {len(r['khong_khop'])}: {r['khong_khop'][:6]}" if r["khong_khop"] else ""))
+    kho.dong()
+    return 0
+
+
 def cmd_nguon(args) -> int:
     """Chạy mọi nguồn `bang`/`adapter` của tỉnh + nguồn dùng chung (_chung.yaml)."""
     kho = _kho(args)
@@ -404,7 +423,7 @@ def tao_parser() -> argparse.ArgumentParser:
     x.set_defaults(fn=cmd_xa)
 
     o = sub.add_parser("xuat", help="Xuất kết quả đã lưu")
-    o.add_argument("--dinh-dang", choices=["json", "excel"], default="excel")
+    o.add_argument("--dinh-dang", choices=["json", "excel", "ca_hai"], default="ca_hai")
     o.add_argument("--ma", help="Lọc theo mã đơn vị")
     o.add_argument("--nhom", help="Lọc theo nhóm")
     o.add_argument("--trang-thai", dest="trang_thai", help="Lọc theo trạng thái")
@@ -464,6 +483,10 @@ def tao_parser() -> argparse.ArgumentParser:
     ng.add_argument("--tep", help="adapter phap_ly: đường dẫn PDF/Excel tải tay")
     ng.add_argument("--gioi-han", type=int, default=None, help="adapter: chỉ xét N sản phẩm (chạy thử)")
     ng.set_defaults(fn=cmd_nguon)
+
+    nt = sub.add_parser("nap-tay", help="Nạp danh sách đã tách sẵn từ du_lieu/nguon_tay/*.json")
+    nt.add_argument("--ma", nargs="*", help="Chỉ nạp các tệp (tên không đuôi)")
+    nt.set_defaults(fn=cmd_nap_tay)
 
     nl = sub.add_parser("nap-llm", help="Nạp trả lời LLM ngoài từ du_lieu/llm_ra/ (qua cùng bước kiểm)")
     nl.add_argument("--ma", nargs="*", help="Chỉ nạp các mã này")
