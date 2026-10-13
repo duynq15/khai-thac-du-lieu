@@ -195,7 +195,8 @@ def _hien_thi(gt, kieu: str):
         if gt and isinstance(gt[0], dict):   # đơn vị cũ chi tiết
             pv = {"toan_bo": "toàn bộ", "mot_phan": "một phần"}
             return "\n".join("• " + " · ".join(filter(None, [x.get("ten"), x.get("huyen_cu"),
-                                                               pv.get(x.get("pham_vi"))])) for x in gt)
+                                                               x.get("tinh_cu_ma") and f"mã tỉnh cũ {x['tinh_cu_ma']}",
+                                                               pv.get(x.get("pham_vi"), x.get("pham_vi"))])) for x in gt)
         return "; ".join(str(x) for x in gt)
     if isinstance(gt, dict):
         if "lat" in gt:
