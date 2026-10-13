@@ -1,0 +1,151 @@
+# Nguồn khai thác của Cần Thơ — agent/người thêm nguồn chỉ cần sửa tệp này.
+# cong_xa.mau: mẫu cổng riêng của xã ({slug} = tên bỏ tiền tố, bỏ dấu; {loai} = xa|phuong|dackhu)
+# bbox: [lat_min, lat_max, lon_min, lon_max] để kiểm toạ độ "trong tỉnh"
+# nguon[].loai: bang (có cấu trúc → chạy `khai-thac nguon`) | van_ban (trang đưa vào LLM) | tham_khao
+# Xác minh URL: 2026-10-13 (xem cột xac_minh). Định dạng nguồn bang: xem khai_thac/nguon/bang.py
+ten: Cần Thơ
+nghi_quyet: 1668/NQ-UBTVQH15 (16/6/2025)
+cong_xa:
+  mau: https://{slug}.cantho.gov.vn
+bbox:
+- 9.2
+- 10.4
+- 105.2
+- 106.4
+nguon:
+- ma: ct_nq1668
+  ten: NQ 1668 văn bản gốc
+  url: https://vanban.chinhphu.vn/?pageid=27160&docid=213982
+  muc: A
+  phu:
+  - dien_tich_km2
+  - dan_so
+  - don_vi_cu_hop_thanh
+  cach_lay: html
+  xac_minh: 200
+  uu_tien: 1
+  loai: van_ban
+- ma: ct_nq1668_cp
+  ten: NQ 1668 toàn văn (Chinhphu)
+  url: https://xaydungchinhsach.chinhphu.vn/toan-van-nghi-quyet-so-1668-nq-ubtvqh15-sap-xep-cac-dvhc-cap-xa-cua-thanh-pho-can-tho-nam-2025-119250616191340674.htm
+  muc: A
+  phu:
+  - dien_tich_km2
+  - dan_so
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: ct_pbgdpl
+  ten: PBGDPL Cần Thơ – tóm tắt NQ 1668
+  url: https://pbgdpl.cantho.gov.vn/can-tho-sap-xep-don-vi-hanh-chinh-cap-xa-tai-nghi-quyet-1668-nq-ubtvqh15
+  muc: B
+  phu:
+  - don_vi_cu_hop_thanh
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: ct_sovhttdl
+  ten: Sở VHTTDL Cần Thơ
+  url: https://sovhttdl.cantho.gov.vn/
+  muc: A
+  phu:
+  - di_tich_xep_hang
+  - le_hoi_cua_xa
+  cach_lay: html
+  xac_minh: 200 (trang chủ; mục di sản 404)
+  loai: van_ban
+- ma: ct_dt_tourism
+  ten: Cần Thơ Tourism – danh mục di tích QG & cấp TP
+  url: https://canthotourism.vn/vi/detailnews/?t=danh-muc-di-tich-lich-su-van-hoa-quoc-gia-va-cap-thanh-pho&id=slogan_19
+  muc: B
+  phu:
+  - di_tich_xep_hang
+  cach_lay: html
+  xac_minh: 000 — thử lại
+  loai: van_ban
+- ma: ct_dt_mekong
+  ten: Thám hiểm Mekong – danh sách di tích Cần Thơ
+  url: https://thamhiemmekong.com/thong-tin-du-lich-mien-tay/danh-sach-cac-di-tich-danh-thang-da-duoc-cong-nhan-tren-dia-ban-thanh-pho-can-tho.html
+  muc: C
+  phu:
+  - di_tich_xep_hang
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: ct_disan
+  ten: Báo Cần Thơ – tổng hợp di sản (108 di tích, 15 DSPVT QG)
+  url: https://baocantho.com.vn/phat-huy-nang-luong-goc-di-san-van-hoa-can-tho-trong-ky-nguyen-vuon-minh-a191786.html
+  muc: B
+  phu:
+  - di_tich_quoc_gia
+  - di_san_phi_vat_the
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: ct_ocop
+  ten: Báo Cần Thơ – 27 SP OCOP 4 sao
+  url: https://baocantho.com.vn/tp-can-tho-thong-nhat-cong-nhan-27-san-pham-dat-ocop-4-sao-a181583.html
+  muc: B
+  phu:
+  - ocop
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: ct_ocop_st
+  ten: Báo Sóc Trăng (cũ) – 263 SP OCOP
+  url: https://baosoctrang.org.vn/tin-moi/202501/soc-trang-co-263-san-pham-at-cac-hang-sao-ocop-95f2e63/
+  muc: C
+  phu:
+  - ocop
+  cach_lay: html
+  xac_minh: search
+  loai: van_ban
+- ma: ct_sonnmt
+  ten: Sở NN&MT Cần Thơ
+  url: https://sonnmt.cantho.gov.vn/
+  muc: A
+  phu:
+  - ocop
+  - lang_nghe
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: ct_thongke
+  ten: Thống kê Cần Thơ
+  url: https://thongkecantho.nso.gov.vn/
+  muc: A
+  phu:
+  - dan_so
+  - dien_tich_km2
+  cach_lay: xlsx
+  xac_minh: 200
+  loai: tham_khao
+- ma: ct_dvc
+  ten: Cổng DVC Cần Thơ
+  url: https://dichvucong.cantho.gov.vn/
+  muc: A
+  phu:
+  - dien_thoai
+  - tru_so
+  cach_lay: js
+  xac_minh: 200
+  loai: tham_khao
+- ma: baocantho
+  ten: Báo Cần Thơ
+  url: https://baocantho.com.vn/
+  muc: B
+  phu:
+  - gioi_thieu
+  - le_hoi_cua_xa
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: ct_cong
+  ten: Cổng TTĐT Cần Thơ
+  url: https://cantho.gov.vn/
+  muc: A
+  phu:
+  - gioi_thieu
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban

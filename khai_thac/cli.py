@@ -9,7 +9,7 @@ from . import cau_hinh
 from . import http as http_mod
 from .models import KetQua
 from .proxy import PoolProxy, kiem_tra_hang_loat, tai_proxy
-from .quy_trinh import NHOM_XA, chay_danh_muc, chay_nhom, chay_thon, chay_tinh
+from .quy_trinh import chay_danh_muc, chay_nhom, chay_thon, chay_tinh
 from .store import Kho
 from .trich_xuat import ollama
 from .xuat import xuat_excel, xuat_json
@@ -50,7 +50,6 @@ def cmd_danh_muc(args) -> int:
 
     if args.xuat:
         # Xuất danh mục ra JSON để bàn giao
-        from .models import DonVi
         import json
         rows = kho.conn.execute("SELECT * FROM don_vi").fetchall()
         ds = [dict(r) for r in rows]
@@ -139,8 +138,6 @@ def cmd_thon(args) -> int:
 
 def cmd_tien_do(args) -> int:
     import json
-    import os
-    from datetime import datetime
 
     from .store import DU_LIEU
 
@@ -255,40 +252,40 @@ def cmd_thong_ke(args) -> int:
     return 0
 
 
-def cmd_nongsan(args) -> int:
+def cmd_nguon(args) -> int:
+    """Chạy mọi nguồn `bang`/`adapter` của tỉnh + nguồn dùng chung (_chung.yaml)."""
     kho = _kho(args)
-    from .nguon.nongsan import nap
+    cfg = cau_hinh.nguon_tinh("_chung").get("nguon", []) + cau_hinh.nguon_tinh(args.tinh_ma).get("nguon", [])
+    chay = [n for n in cfg if n.get("loai") in ("bang", "adapter") and (not args.ma or n["ma"] in args.ma)]
+    if not chay:
+        print(f"Tỉnh {args.tinh_ma}: chưa có nguồn bang/adapter trong config/nguon/ (hoặc --ma không khớp).")
+        return 1
+    for n in chay:
+        try:
+            if n["loai"] == "bang":
+                from .nguon import bang
 
-    res = nap(kho, tinh_ma=args.tinh_ma, gioi_han=args.gioi_han)
-    print(f"Đã xét {res['xem']} sản phẩm · {res['san_pham']} gắn xã · {res['xã']} xã có OCOP (CHỜ DUYỆT)")
+                r = bang.nap(kho, n, args.tinh_ma)
+                print(f"  {n['ma']}: {r['so_truong']} trường · {r['so_xa']} xã"
+                      + (f" · không khớp {len(r['khong_khop'])}: {r['khong_khop'][:5]}" if r["khong_khop"] else ""))
+            else:
+                print(f"  {n['ma']}: {_chay_adapter(kho, n, args)}")
+        except Exception as e:  # một nguồn hỏng không chặn nguồn khác
+            print(f"  ✗ {n['ma']}: {type(e).__name__}: {e}")
     kho.dong()
     return 0
 
 
-def cmd_ocop_news(args) -> int:
-    kho = _kho(args)
-    from .nguon.ocop_news import nap_url
+def _chay_adapter(kho, n: dict, args) -> dict:
+    """Nguồn cần code riêng (site đặc thù). Thêm adapter mới: viết module + một nhánh ở đây."""
+    import importlib
 
-    tong = 0
-    for url in args.url:
-        r = nap_url(kho, url, tinh_ma=args.tinh_ma)
-        print(f"  {r['san_pham']} SP / {r['xã']} xã · {url[:70]}")
-        tong += r["xã"]
-    print(f"Xong: {tong} xã có OCOP từ {len(args.url)} bài (chờ duyệt).")
-    kho.dong()
-    return 0
-
-
-def cmd_ocop(args) -> int:
-    kho = _kho(args)
-    from .nguon.ocop import nap
-
-    res = nap(kho, tinh_ma=args.tinh_ma, gioi_han=args.gioi_han,
-              so_trang_moi_danh_muc=args.so_trang)
-    print(f"Đã xét {res['xem']} sản phẩm · {res['san_pham']} gắn được xã · "
-          f"{res['xã']} xã có OCOP (đưa vào CHỜ DUYỆT)")
-    kho.dong()
-    return 0
+    mod = importlib.import_module(f".nguon.{n['module']}", __package__)
+    if n["module"] == "ocop_news":
+        return mod.nap_url(kho, n["url"], tinh_ma=args.tinh_ma)
+    if n["module"] == "phap_ly":
+        return mod.nap(kho, args.tep or n["tep"], tinh_ma=args.tinh_ma)
+    return mod.nap(kho, tinh_ma=args.tinh_ma, gioi_han=args.gioi_han)
 
 
 def cmd_do_mang(args) -> int:
@@ -304,19 +301,6 @@ def cmd_do_mang(args) -> int:
         print(f"  {r['method']:4} {r['type']:6} {r['url'][:100]}")
         if r.get("body"):
             print(f"        body: {r['body'][:220]}")
-    return 0
-
-
-def cmd_phap_ly(args) -> int:
-    kho = _kho(args)
-    from .nguon.phap_ly import nap
-
-    res = nap(kho, args.tep, tinh_ma=getattr(args, "tinh_ma", None))
-    print(f"Tệp: {res['tep']} · sha256:{res['sha256'][:16]}…")
-    print(f"Bảng đọc được: {res['so_bang']} · ghi {res['so_ket_qua']} trường (đạt, nguồn văn bản pháp lý)")
-    if res["khong_khop"]:
-        print(f"Không khớp được {len(res['khong_khop'])} đơn vị:", res["khong_khop"][:8])
-    kho.dong()
     return 0
 
 
@@ -443,47 +427,19 @@ def tao_parser() -> argparse.ArgumentParser:
     px.add_argument("--xem", action="store_true", help="Xem trạng thái pool")
     px.set_defaults(fn=cmd_proxy)
 
-    cs = sub.add_parser("chuyen-sau", help="Nạp dữ liệu chuyên sâu chính thống theo tỉnh")
-    cs.add_argument("--tinh-ma", dest="tinh_ma", default="31", help="Mã tỉnh (mặc định 31 = Hải Phòng)")
-    cs.set_defaults(fn=cmd_chuyen_sau)
-
-    pl = sub.add_parser("phap-ly", help="Bóc dữ liệu từ văn bản pháp lý PDF/Excel (Đề án/Nghị quyết)")
-    pl.add_argument("--tep", required=True, help="Đường dẫn PDF hoặc Excel")
-    pl.add_argument("--tinh-ma", dest="tinh_ma", help="Giới hạn khớp đơn vị theo mã tỉnh")
-    pl.set_defaults(fn=cmd_phap_ly)
+    ng = sub.add_parser("nguon", help="Chạy nguồn có cấu trúc (bang/adapter) khai báo trong config/nguon/")
+    ng.add_argument("--tinh-ma", dest="tinh_ma", required=True, help="Mã tỉnh, vd 46")
+    ng.add_argument("--ma", nargs="*", help="Chỉ chạy các nguồn này (mặc định: tất cả bang/adapter)")
+    ng.add_argument("--tep", help="adapter phap_ly: đường dẫn PDF/Excel tải tay")
+    ng.add_argument("--gioi-han", type=int, default=None, help="adapter: chỉ xét N sản phẩm (chạy thử)")
+    ng.set_defaults(fn=cmd_nguon)
 
     dm = sub.add_parser("do-mang", help="Dò request AJAX/API của một trang (SPA)")
     dm.add_argument("--url", required=True)
     dm.add_argument("--so-luong", type=int, default=40)
     dm.set_defaults(fn=cmd_do_mang)
 
-    oc = sub.add_parser("ocop", help="Cào danh bạ OCOP Quốc gia (ocop.gov.vn)")
-    oc.add_argument("--tinh-ma", dest="tinh_ma", help="Giới hạn khớp theo mã tỉnh")
-    oc.add_argument("--gioi-han", type=int, default=None, help="Chỉ xét N sản phẩm (chạy thử)")
-    oc.add_argument("--so-trang", type=int, default=15, help="Số trang mỗi danh mục (mặc định 15)")
-    oc.set_defaults(fn=cmd_ocop)
-
-    ns = sub.add_parser("nongsan", help="Cào Sàn nông sản Hải Phòng (có địa chỉ theo xã)")
-    ns.add_argument("--tinh-ma", dest="tinh_ma", default="31")
-    ns.add_argument("--gioi-han", type=int, default=None, help="Chỉ xét N sản phẩm (chạy thử)")
-    ns.set_defaults(fn=cmd_nongsan)
-
-    on = sub.add_parser("ocop-news", help="Bóc OCOP từ bài công bố (nhiều địa phương)")
-    on.add_argument("--tinh-ma", dest="tinh_ma", help="Mã tỉnh để khớp xã")
-    on.add_argument("--url", nargs="+", required=True, help="Một hoặc nhiều URL bài công bố")
-    on.set_defaults(fn=cmd_ocop_news)
     return p
-
-
-def cmd_chuyen_sau(args) -> int:
-    kho = _kho(args)
-    from .nguon.chuyen_sau import nap_du_lieu_chuyen_sau
-    tinh_ma = getattr(args, "tinh_ma", "31") or "31"
-    print(f"Đang nạp dữ liệu đề xuất biên tập (chờ duyệt) cho tỉnh {tinh_ma}...")
-    res = nap_du_lieu_chuyen_sau(kho, ma_tinh=tinh_ma)
-    print(f"Hoàn tất: Đã nạp {res.get('so_truong_de_xuat', 0)} trường đề xuất (trạng thái: chờ duyệt) cho {res['so_don_vi']} đơn vị.")
-    kho.dong()
-    return 0
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -1,0 +1,154 @@
+# Nguồn khai thác của Đà Nẵng — agent/người thêm nguồn chỉ cần sửa tệp này.
+# cong_xa.mau: mẫu cổng riêng của xã ({slug} = tên bỏ tiền tố, bỏ dấu; {loai} = xa|phuong|dackhu)
+# bbox: [lat_min, lat_max, lon_min, lon_max] để kiểm toạ độ "trong tỉnh"
+# nguon[].loai: bang (có cấu trúc → chạy `khai-thac nguon`) | van_ban (trang đưa vào LLM) | tham_khao
+# Xác minh URL: 2026-10-13 (xem cột xac_minh). Định dạng nguồn bang: xem khai_thac/nguon/bang.py
+ten: Đà Nẵng
+nghi_quyet: 1659/NQ-UBTVQH15 (16/6/2025)
+cong_xa:
+  mau: https://{slug}.danang.gov.vn
+bbox:
+- 14.9
+- 16.3
+- 107.2
+- 108.8
+nguon:
+- ma: dn_ocop_tin_18sp
+  ten: Cổng ĐN – 18 SP OCOP 4 sao, 3 sao (bài công bố)
+  loai: adapter
+  module: ocop_news
+  url: https://danang.gov.vn/vi/w/18-san-pham-ocop-duoc-trao-giay-chung-phan-hang-4-sao-va-3-sao-i
+  muc: B
+- ma: dn_nq1659
+  ten: NQ 1659 toàn văn (Chinhphu)
+  url: https://xaydungchinhsach.chinhphu.vn/toan-van-nghi-quyet-so-1659-nq-ubtvqh15-sap-xep-cac-dvhc-cap-xa-cua-thanh-pho-da-nang-nam-2025-119250616202714604.htm
+  muc: A
+  phu:
+  - dien_tich_km2
+  - dan_so
+  - don_vi_cu_hop_thanh
+  cach_lay: html
+  xac_minh: 200
+  uu_tien: 1
+  loai: van_ban
+- ma: dn_tru_so
+  ten: 'Cổng ĐN – Danh sách trụ sở UBND (JSON nhúng: phuong_xa, dia_chi, so_dien_thoai)'
+  url: https://danang.gov.vn/en/danh-sach-tru-so-ubnd
+  muc: A
+  phu:
+  - tru_so
+  - dien_thoai
+  cach_lay: json_nhung
+  xac_minh: 200
+  uu_tien: 1
+  ghi_chu: biến JS dvhcList — nguồn có cấu trúc tốt nhất cho ĐN
+  loai: tham_khao
+- ma: dn_bando
+  ten: Bản đồ số Đà Nẵng (ranh giới, diện tích, dân số)
+  url: https://bando.danang.gov.vn
+  muc: A
+  phu:
+  - ranh_gioi_vi_tri
+  - dien_tich_km2
+  - dan_so
+  cach_lay: js
+  xac_minh: 200 (chưa kiểm API)
+  loai: tham_khao
+- ma: dn_1022
+  ten: Đà Nẵng mới 1022
+  url: https://danangmoi.1022.vn
+  muc: A
+  phu:
+  - tru_so
+  - dien_thoai
+  cach_lay: js
+  xac_minh: 200
+  loai: tham_khao
+- ma: dn_vna
+  ten: TTXVN – 94 đơn vị cấp xã ĐN
+  url: https://nvsk.vnanet.vn/94-don-vi-hanh-chinh-cap-xa-cua-thanh-pho-da-nang-nam-2025-1-172212.vna
+  muc: B
+  phu:
+  - don_vi_cu_hop_thanh
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: dn_ds94
+  ten: Chinhphu – Danh sách 94 xã phường
+  url: https://xaydungchinhsach.chinhphu.vn/sap-xep-dvhc-danh-sach-94-xa-phuong-dac-khu-cua-thanh-pho-da-nang-moi-119250622180811924.htm
+  muc: B
+  phu:
+  - don_vi_cu_hop_thanh
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: dn_cadn
+  ten: Báo CA Đà Nẵng – địa chỉ + SĐT UBND & HCC
+  url: https://cadn.com.vn/dia-chi-so-dien-thoai-ubnd-va-trung-tam-phuc-vu-hanh-chinh-cong-cac-phuong-xa-moi-post315333.html
+  muc: B
+  phu:
+  - tru_so
+  - dien_thoai
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: dn_tuoitre
+  ten: Tuổi Trẻ – trụ sở 94 xã
+  url: https://tuoitre.vn/da-nang-cong-bo-tru-so-ubnd-94-xa-moi-va-trung-tam-phuc-vu-hanh-chinh-cong-20250628102615293.htm
+  muc: B
+  phu:
+  - tru_so
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: dn_svhttdl
+  ten: Sở VHTTDL Đà Nẵng (17 di tích QG + 60 cấp TP)
+  url: https://svhttdl.danang.gov.vn/
+  muc: A
+  phu:
+  - di_tich_xep_hang
+  - le_hoi_cua_xa
+  cach_lay: html
+  xac_minh: 000 — thử lại; tên miền chưa chắc (vhtt.danang.gov.vn cũng 000)
+  loai: van_ban
+- ma: dn_dspvt
+  ten: VietnamPlus – 7 DSVH phi vật thể QG ĐN
+  url: https://www.vietnamplus.vn/kham-pha-7-di-san-van-hoa-phi-vat-the-quoc-gia-cua-thanh-pho-da-nang-post979651.vnp
+  muc: B
+  phu:
+  - di_san_phi_vat_the
+  cach_lay: html
+  xac_minh: search
+  ghi_chu: số trước hợp nhất Quảng Nam
+  loai: van_ban
+- ma: baodanang
+  ten: Báo Đà Nẵng (baoquangnam.vn đã chuyển về đây)
+  url: https://baodanang.vn
+  muc: B
+  phu:
+  - gioi_thieu
+  - le_hoi_cua_xa
+  - lang_nghe
+  - ocop
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: dn_dulich
+  ten: Đà Nẵng Fantasticity
+  url: https://danangfantasticity.com
+  muc: C
+  phu:
+  - di_tich_xep_hang
+  - le_hoi_cua_xa
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: dn_cong
+  ten: Cổng TTĐT Đà Nẵng
+  url: https://danang.gov.vn
+  muc: A
+  phu:
+  - gioi_thieu
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban

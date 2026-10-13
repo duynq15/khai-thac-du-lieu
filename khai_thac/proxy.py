@@ -9,7 +9,6 @@ vào `du_lieu/proxy.txt` (mỗi dòng `host:port` hoặc `user:pass@host:port`).
 from __future__ import annotations
 
 import random
-from pathlib import Path
 
 import httpx
 

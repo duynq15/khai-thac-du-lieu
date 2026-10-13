@@ -14,7 +14,7 @@ from .models import DAT, LOI, THIEU, DonVi, KetQua, Luot
 from .nguon import danh_muc, thon, toa_do, trang_xa, van_ban, wikipedia
 from .nguon.tim_kiem import NguonBiChan, tim_theo_mau, xep_muc
 from .store import Kho
-from .text import chuan_hoa, rut_gon, slug as lam_slug, tach_danh_sach
+from .text import chuan_hoa, slug as lam_slug, tach_danh_sach
 from .trich_xuat import quy_tac
 from .trich_xuat import ollama
 
@@ -110,7 +110,7 @@ def gom_nguon_van_ban(don_vi: sqlite3.Row | dict, *, so_trang_gov: int = 4) -> l
 
     # 1) Trang chính thống của đơn vị (nguồn A).
     #    mien_gov đọc CACHE trước → nếu đã biết tên miền thì KHÔNG cần tìm kiếm.
-    mien = trang_xa.mien_gov(ten, tinh_ngan)
+    mien = trang_xa.mien_gov(dict(don_vi))
     if mien:
         for duong in ("", "/gioi-thieu"):
             url = mien.rstrip("/") + duong

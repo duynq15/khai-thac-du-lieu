@@ -114,7 +114,7 @@ class Kho:
         ]
         cach = "INSERT OR REPLACE" if ghi_de else "INSERT OR IGNORE"
         self.conn.executemany(
-            f"""INSERT OR REPLACE INTO don_vi
+            """INSERT OR REPLACE INTO don_vi
                 (ma, ten, loai, tinh_ma, tinh_ten, parent_ma, codename, don_vi_cu_hop_thanh,
                  so_don_vi_cu, can_cu_phap_ly, ngay_hieu_luc, nguon, khop_da_nguon)
                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""".replace("INSERT OR REPLACE", cach),

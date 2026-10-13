@@ -14,9 +14,9 @@ from .tim_kiem import tim
 # Đường dẫn hay có danh sách cán bộ / thôn trên trang xã
 DUONG_DAN_HUU_ICH = ("/", "/thong-bao", "/tin-tuc", "/doi-song-xa-hoi", "/van-hoa-xa-hoi")
 
-# Cache tên miền đã dò được: {tên đơn vị: tên miền}. Dò tìm kiếm chậm và dễ bị
-# chặn nên nhớ lại để lần sau khỏi gọi.
-TEP_CACHE = DU_LIEU / "mien_gov.json"
+# Cổng riêng của từng xã, khoá theo MÃ đơn vị (tên trùng giữa các tỉnh: "Phường Hương
+# Trà" ở cả Huế và Đà Nẵng). Dò tìm kiếm chậm và dễ bị chặn nên nhớ lại kết quả.
+TEP_CACHE = DU_LIEU / "cong_xa.json"
 
 
 def _doc_cache() -> dict:
@@ -28,32 +28,16 @@ def _doc_cache() -> dict:
     return {}
 
 
-def _ghi_cache(ten: str, mien: str) -> None:
+def _ghi_cache(ma: str, mien: str | None) -> None:
     cache = _doc_cache()
-    cache[ten] = mien
+    cache[ma] = mien
     TEP_CACHE.parent.mkdir(parents=True, exist_ok=True)
-    TEP_CACHE.write_text(json.dumps(cache, ensure_ascii=False, indent=2), encoding="utf-8")
+    TEP_CACHE.write_text(json.dumps(cache, ensure_ascii=False, indent=1), encoding="utf-8")
 
 
 def _rut(ten: str) -> str:
     goc = lam_slug(ten)                                   # xa-dong-anh
     return re.sub(r"^(xa|phuong|thi-tran|dac-khu)-", "", goc).replace("-", "")  # donganh
-
-
-def mien_tu_ket_qua(ten: str, ket_qua: list[dict]) -> str | None:
-    """Suy tên miền gov của đơn vị từ danh sách kết quả tìm kiếm có sẵn."""
-    rut = _rut(ten)
-    for r in ket_qua:
-        host = (urlparse(r["url"]).netloc or "").lower()
-        if host.endswith(".gov.vn") and rut and rut in host.replace("-", ""):
-            return f"https://{host}"
-    return None
-
-
-def _tinh_slug(tinh: str | None) -> str:
-    """'Thành phố Hải Phòng' -> 'haiphong'."""
-    s = lam_slug(tinh or "")
-    return re.sub(r"^(thanh-pho|tinh|tp)-", "", s).replace("-", "")
 
 
 def _thu_mien(url: str) -> bool:
@@ -64,45 +48,47 @@ def _thu_mien(url: str) -> bool:
         r = goi(url, thu_lai=1, timeout=10.0)
     except Exception:
         return False
-    return r is not None and r.status_code == 200
+    return r is not None and r.status_code == 200 and "/error" not in str(r.url)
 
 
-def mien_gov(ten: str, tinh: str | None = None, *, mac_dinh: str | None = None,
-             ket_qua: list[dict] | None = None) -> str | None:
-    """Dò tên miền *.gov.vn của đơn vị. Đọc cache trước; rồi ĐOÁN theo mẫu
-    <tên-xã>.<tỉnh>.gov.vn; cuối cùng mới tìm kiếm."""
+def _doan_theo_mau(don_vi: dict) -> list[str]:
+    """Ứng viên từ mẫu `cong_xa.mau` của tỉnh, ví dụ 'https://{slug}.hue.gov.vn'.
+
+    {slug} = tên bỏ tiền tố (donganh), {loai} = xa | phuong | dackhu.
+    """
+    from .. import cau_hinh
+
+    loai = {"phuong": "phuong", "dac_khu": "dackhu"}.get(don_vi.get("loai"), "xa")
+    mau = cau_hinh.nguon_tinh(don_vi.get("tinh_ma")).get("cong_xa", {}).get("mau") or []
+    return [m.format(slug=_rut(don_vi["ten"]), loai=loai) for m in ([mau] if isinstance(mau, str) else mau)]
+
+
+def mien_gov(don_vi: dict, *, mac_dinh: str | None = None) -> str | None:
+    """Cổng *.gov.vn của một xã: cache theo mã → mẫu cấu hình của tỉnh → tìm kiếm."""
+    ma, ten = don_vi["ma"], don_vi["ten"]
     if mac_dinh:
-        _ghi_cache(ten, mac_dinh)
+        _ghi_cache(ma, mac_dinh)
         return mac_dinh
 
     cache = _doc_cache()
-    if cache.get(ten):
-        return cache[ten]
+    if ma in cache:
+        return cache[ma]  # None = đã dò, không có cổng → khỏi dò lại
 
-    # 1) Đoán theo mẫu (nhanh, chắc): donganh.hanoi.gov.vn, thanhdong.haiphong.gov.vn
-    rut = _rut(ten)
-    tinh_slug = _tinh_slug(tinh)
-    if rut and tinh_slug:
-        doan = f"https://{rut}.{tinh_slug}.gov.vn"
+    for doan in _doan_theo_mau(don_vi):
         if _thu_mien(doan):
-            _ghi_cache(ten, doan)
+            _ghi_cache(ma, doan)
             return doan
 
-    # 2) Từ kết quả tìm kiếm có sẵn
-    if ket_qua:
-        mien = mien_tu_ket_qua(ten, ket_qua)
-        if mien:
-            _ghi_cache(ten, mien)
-            return mien
-
-    # 3) Tìm kiếm (không dùng dấu ngoặc kép — Brave trả rác khi có ngoặc)
-    truy_van = f"{ten} {tinh}".strip() if tinh else ten
-    for r in tim(truy_van, so_luong=10):
+    # Tìm kiếm (không dùng dấu ngoặc kép — Brave trả rác khi có ngoặc). Chỉ nhận host
+    # chứa slug tên xã để không lấy nhầm cổng tỉnh/xã khác.
+    rut = _rut(ten)
+    tinh = don_vi.get("tinh_ten") or ""
+    for r in tim(f"{ten} {tinh}".strip(), so_luong=10):
         host = (urlparse(r["url"]).netloc or "").lower()
         if host.endswith(".gov.vn") and rut and rut in host.replace("-", ""):
-            mien = f"https://{host}"
-            _ghi_cache(ten, mien)
-            return mien
+            _ghi_cache(ma, f"https://{host}")
+            return f"https://{host}"
+    _ghi_cache(ma, None)
     return None
 
 

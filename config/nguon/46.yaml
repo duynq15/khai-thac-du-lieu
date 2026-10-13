@@ -1,0 +1,152 @@
+# Nguồn khai thác của Huế — agent/người thêm nguồn chỉ cần sửa tệp này.
+# cong_xa.mau: mẫu cổng riêng của xã ({slug} = tên bỏ tiền tố, bỏ dấu; {loai} = xa|phuong|dackhu)
+# bbox: [lat_min, lat_max, lon_min, lon_max] để kiểm toạ độ "trong tỉnh"
+# nguon[].loai: bang (có cấu trúc → chạy `khai-thac nguon`) | van_ban (trang đưa vào LLM) | tham_khao
+# Xác minh URL: 2026-10-13 (xem cột xac_minh). Định dạng nguồn bang: xem khai_thac/nguon/bang.py
+ten: Huế
+nghi_quyet: 1675/NQ-UBTVQH15 (16/6/2025)
+cong_xa:
+  mau: https://{slug}.hue.gov.vn
+bbox:
+- 15.9
+- 16.8
+- 107.0
+- 108.3
+nguon:
+- ma: hue_nq1675
+  ten: NQ 1675 văn bản gốc
+  url: https://vanban.chinhphu.vn/?amp=&docid=213995&pageid=27160
+  muc: A
+  phu:
+  - dien_tich_km2
+  - dan_so
+  - don_vi_cu_hop_thanh
+  cach_lay: html
+  xac_minh: 200
+  uu_tien: 1
+  loai: van_ban
+- ma: hue_ds40
+  ten: Chinhphu – Danh sách 40 xã phường Huế
+  url: https://xaydungchinhsach.chinhphu.vn/sap-xep-dvhc-danh-sach-40-xa-phuong-moi-cua-thanh-pho-hue-119250622214953671.htm
+  muc: A
+  phu:
+  - don_vi_cu_hop_thanh
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: hue_svhttdl
+  ten: Sở VHTTDL Huế – Di sản văn hóa
+  url: https://svhttdl.hue.gov.vn/di-san-van-hoa.html
+  muc: A
+  phu:
+  - di_tich_xep_hang
+  - di_san_phi_vat_the
+  cach_lay: html
+  xac_minh: 200
+  uu_tien: 1
+  loai: van_ban
+- ma: hue_danh_muc
+  ten: Sở VHTTDL Huế – Chuyên mục danh mục
+  url: https://svhttdl.hue.gov.vn/chuyen-muc/danh-muc-3375.html
+  muc: A
+  phu:
+  - di_tich_xep_hang
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: hue_codo
+  ten: Trung tâm Bảo tồn Di tích Cố đô Huế
+  url: https://hueworldheritage.org.vn/Di-san
+  muc: A
+  phu:
+  - di_tich_quoc_gia_dac_biet
+  - di_san_phi_vat_the
+  - le_hoi_cap_tinh
+  cach_lay: html
+  xac_minh: 200 (dùng /Default.aspx, gốc 302)
+  loai: van_ban
+- ma: hue_dt_tp
+  ten: Báo Văn hóa – 18 di tích cấp TP Huế (QĐ 1277)
+  url: https://baovanhoa.vn/van-hoa/xep-hang-18-di-tich-lich-su-van-hoa-cap-thanh-pho-tai-hue-220147.html
+  muc: B
+  phu:
+  - di_tich_xep_hang
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: hue_dt_qg_2025
+  ten: Báo Chính phủ – 15 di tích QG mới (QĐ 3242/QĐ-BVHTTDL 9/9/2025)
+  url: https://baochinhphu.vn/them-15-di-tich-danh-thang-duoc-xep-hang-cap-quoc-gia-102250912095107536.htm
+  muc: B
+  phu:
+  - di_tich_xep_hang
+  - nam_cong_nhan
+  cach_lay: html
+  xac_minh: search
+  loai: van_ban
+- ma: hue_bthcm
+  ten: Bảo tàng HCM Huế – di tích QGĐB
+  url: https://bthcm.hue.gov.vn/Di-t%C3%ADch-ch%E1%BB%A7-t%E1%BB%8Bch-H%E1%BB%93-Ch%C3%AD-Minh/Di-t%C3%ADch-qu%E1%BB%91c-gia-%C4%91%E1%BA%B7c-bi%E1%BB%87t
+  muc: B
+  phu:
+  - di_tich_quoc_gia_dac_biet
+  cach_lay: html
+  xac_minh: search
+  loai: van_ban
+- ma: hue_ocop
+  ten: Nông thôn mới – Huế 117 SP OCOP từ 3 sao
+  url: https://nongthonmoi.mic.gov.vn/hue-phan-dau-them-20-san-pham-dat-tu-3-sao-tro-len-trong-nam-2026-197260623181519417.htm
+  muc: B
+  phu:
+  - ocop
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: hue_ocop_hethan
+  ten: Dân Việt – 53 SP OCOP hết hạn (để loại)
+  url: https://etime.danviet.vn/hue-cong-khai-53-san-pham-ocop-het-han-canh-bao-khong-tiep-tuc-gan-logo-khi-chua-danh-gia-lai-d1449875.html
+  muc: B
+  phu:
+  - ocop
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: hue_lang_nghe
+  ten: NTM Huế – 8 làng nghề tiêu biểu
+  url: https://www.nongthonmoithuathienhue.vn/san-pham-chu-luc/gioi-thieu-8-lang-nghe-truyen-thong-tieu-bieu-cua-tinh-thua-thien-hue/
+  muc: B
+  phu:
+  - lang_nghe
+  cach_lay: html
+  xac_minh: 000 — thử lại
+  loai: van_ban
+- ma: hue_thongke
+  ten: Thống kê Huế
+  url: https://thongkehue.nso.gov.vn/
+  muc: A
+  phu:
+  - dan_so
+  - dien_tich_km2
+  cach_lay: xlsx
+  xac_minh: 200
+  loai: tham_khao
+- ma: huengaynay
+  ten: Báo Huế Ngày Nay (baothuathienhue.vn đã chuyển về)
+  url: https://huengaynay.vn/
+  muc: B
+  phu:
+  - gioi_thieu
+  - le_hoi_cua_xa
+  - nhan_vat_lich_su
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: hue_cong
+  ten: Cổng TTĐT Huế
+  url: https://hue.gov.vn/
+  muc: A
+  phu:
+  - gioi_thieu
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban

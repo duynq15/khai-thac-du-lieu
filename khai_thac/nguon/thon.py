@@ -78,9 +78,7 @@ def boc_ten_thon(van_ban: str) -> Counter:
 
 def thu_thap(xa: dict, *, so_trang: int = 3, mien: str | None = None) -> list[dict]:
     """Gom thôn của một xã. Trả [{'ten', 'so_lan', 'nguon_url'}], xếp theo số lần."""
-    ten = xa["ten"]
-    tinh = xa.get("tinh_ten")
-    mien = mien or trang_xa.mien_gov(ten, tinh)
+    mien = mien or trang_xa.mien_gov(xa)
     if not mien:
         return []
 

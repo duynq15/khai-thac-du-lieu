@@ -1,0 +1,187 @@
+# Nguồn khai thác của TP Hồ Chí Minh — agent/người thêm nguồn chỉ cần sửa tệp này.
+# cong_xa.mau: mẫu cổng riêng của xã ({slug} = tên bỏ tiền tố, bỏ dấu; {loai} = xa|phuong|dackhu)
+# bbox: [lat_min, lat_max, lon_min, lon_max] để kiểm toạ độ "trong tỉnh"
+# nguon[].loai: bang (có cấu trúc → chạy `khai-thac nguon`) | van_ban (trang đưa vào LLM) | tham_khao
+# Xác minh URL: 2026-10-13 (xem cột xac_minh). Định dạng nguồn bang: xem khai_thac/nguon/bang.py
+ten: TP Hồ Chí Minh
+nghi_quyet: 1685/NQ-UBTVQH15 (16/6/2025)
+cong_xa:
+  mau:
+  - https://{loai}{slug}.gov.vn
+  - https://{slug}.hochiminhcity.gov.vn
+bbox:
+- 10.3
+- 11.6
+- 106.3
+- 107.6
+nguon:
+- ma: hcm_nq1685
+  ten: NQ 1685 văn bản gốc
+  url: https://vanban.chinhphu.vn/?pageid=27160&docid=214007
+  muc: A
+  phu:
+  - dien_tich_km2
+  - dan_so
+  - don_vi_cu_hop_thanh
+  cach_lay: html
+  xac_minh: 200
+  uu_tien: 1
+  loai: van_ban
+- ma: hcm_nq1685_cp
+  ten: NQ 1685 toàn văn (Chinhphu)
+  url: https://xaydungchinhsach.chinhphu.vn/toan-van-nghi-quyet-so-1685-nq-ubtvqh15-sap-xep-cac-dvhc-cap-xa-cua-thanh-pho-ho-chi-minh-nam-2025-119250616211341304.htm
+  muc: A
+  phu:
+  - dien_tich_km2
+  - dan_so
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: hcm_tru_so_vne
+  ten: VnExpress – trụ sở + đường dây nóng 168 đơn vị
+  url: https://vnexpress.net/tp-hcm-cong-bo-tru-so-duong-day-nong-168-xa-phuong-dac-khu-4906726.html
+  muc: B
+  phu:
+  - tru_so
+  - dien_thoai
+  cach_lay: html
+  xac_minh: 200
+  uu_tien: 1
+  ghi_chu: thay cho cổng xã (chỉ 13/168 có cổng)
+  loai: van_ban
+- ma: hcm_tru_so_tt
+  ten: Tuổi Trẻ – địa chỉ trụ sở 168 phường xã
+  url: https://tuoitre.vn/dia-chi-tru-so-168-phuong-xa-dac-khu-cua-tp-hcm-moi-20250629233011622.htm
+  muc: B
+  phu:
+  - tru_so
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: hcm_tru_so_cp
+  ten: Chinhphu TP.HCM – địa chỉ trụ sở 168 phường xã
+  url: https://tphcm.chinhphu.vn/dia-chi-tru-so-168-phuong-xa-moi-o-tphcm-tu-ngay-1-7-101250626094828113.htm
+  muc: B
+  phu:
+  - tru_so
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: hcm_hcc_plo
+  ten: Tuổi Trẻ/PLO – 168 trụ sở UBND + TT HCC
+  url: https://tuoitre.vn/plo/dia-chi-168-tru-so-ubnd-va-trung-tam-hanh-chinh-cong-cap-xa-thuoc-tphcm-post858597.html
+  muc: B
+  phu:
+  - tru_so
+  - dien_thoai
+  cach_lay: html
+  xac_minh: search
+  loai: van_ban
+- ma: hcm_capuy
+  ten: Thành ủy TP.HCM – trang từng phường (giới thiệu, lãnh đạo)
+  url: https://www.hcmcpv.org.vn/cap-uy/phuong-ben-thanh/phuong-ben-thanh-1425350954
+  muc: A
+  phu:
+  - gioi_thieu
+  - chu_tich_ubnd
+  cach_lay: html
+  xac_minh: 200
+  ghi_chu: mẫu 1 phường; cần dò mục lục /cap-uy/ cho 168 đơn vị
+  loai: van_ban
+- ma: hcm_svhtt
+  ten: Sở VHTT TP.HCM
+  url: https://svhtt.hochiminhcity.gov.vn/
+  muc: A
+  phu:
+  - di_tich_xep_hang
+  - le_hoi_cua_xa
+  cach_lay: html
+  xac_minh: 200 (chưa tìm được trang danh mục)
+  loai: van_ban
+- ma: hcm_dt_bd
+  ten: Danh mục di tích QG & cấp tỉnh Bình Dương (cũ)
+  url: https://dulichbinhduong.org.vn/du-lich/danh-muc-di-tich-quoc-gia-va-cap-tinh-tren-dia-ban-tinh-binh-duong/ct
+  muc: B
+  phu:
+  - di_tich_xep_hang
+  - nam_cong_nhan
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: hcm_ocop
+  ten: TTBC TP.HCM – Dấu ấn OCOP (419 SP đến 6/2025)
+  url: https://ttbc-hcm.gov.vn/dau-an-san-pham-ocop-tphcm-34491.html
+  muc: B
+  phu:
+  - ocop
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: hcm_sonnmt
+  ten: Sở NN&MT TP.HCM (OCOP)
+  url: https://sonnmt.hochiminhcity.gov.vn/
+  muc: A
+  phu:
+  - ocop
+  - lang_nghe
+  cach_lay: html
+  xac_minh: 500 — thử lại
+  loai: van_ban
+- ma: hcm_thongke
+  ten: Thống kê TP.HCM
+  url: https://thongkehochiminh.nso.gov.vn/
+  muc: A
+  phu:
+  - dan_so
+  - dien_tich_km2
+  cach_lay: xlsx
+  xac_minh: 200
+  loai: tham_khao
+- ma: hcm_opendata
+  ten: Dữ liệu mở TP.HCM (CKAN)
+  url: https://opendata.hochiminhcity.gov.vn/
+  muc: A
+  phu:
+  - ranh_gioi_vi_tri
+  - dan_so
+  cach_lay: api
+  xac_minh: 200 (chưa kiểm dataset 2025)
+  loai: tham_khao
+- ma: sggp
+  ten: Báo Sài Gòn Giải Phóng
+  url: https://www.sggp.org.vn/
+  muc: B
+  phu:
+  - gioi_thieu
+  - le_hoi_cua_xa
+  - nhan_vat_lich_su
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: tuoitre
+  ten: Tuổi Trẻ (nld.com.vn, plo.vn đã chuyển về)
+  url: https://tuoitre.vn/
+  muc: B
+  phu:
+  - gioi_thieu
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: thanhnien
+  ten: Thanh Niên
+  url: https://thanhnien.vn/
+  muc: B
+  phu:
+  - gioi_thieu
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: hcm_cong
+  ten: Cổng TTĐT TP.HCM
+  url: https://hochiminhcity.gov.vn/
+  muc: A
+  phu:
+  - gioi_thieu
+  cach_lay: js
+  xac_minh: 200 (không có danh bạ 168 đơn vị)
+  loai: tham_khao

@@ -1,0 +1,162 @@
+# Nguồn khai thác của Hải Phòng — agent/người thêm nguồn chỉ cần sửa tệp này.
+# cong_xa.mau: mẫu cổng riêng của xã ({slug} = tên bỏ tiền tố, bỏ dấu; {loai} = xa|phuong|dackhu)
+# bbox: [lat_min, lat_max, lon_min, lon_max] để kiểm toạ độ "trong tỉnh"
+# nguon[].loai: bang (có cấu trúc → chạy `khai-thac nguon`) | van_ban (trang đưa vào LLM) | tham_khao
+# Xác minh URL: 2026-10-13 (xem cột xac_minh). Định dạng nguồn bang: xem khai_thac/nguon/bang.py
+ten: Hải Phòng
+nghi_quyet: 1669/NQ-UBTVQH15 (16/6/2025)
+cong_xa:
+  mau: https://{slug}.haiphong.gov.vn
+bbox:
+- 20.5
+- 21.3
+- 106.0
+- 107.8
+nguon:
+- ma: nongsan_hp
+  ten: Sàn nông sản Hải Phòng (OCOP có địa chỉ theo xã)
+  loai: adapter
+  module: nongsan
+  url: https://nongsan.haiphong.gov.vn
+  muc: A
+- ma: hp_nq1669
+  ten: NQ 1669 toàn văn (cổng HP)
+  url: https://haiphong.gov.vn/thong-tin-chi-dao-dieu-hanh/toan-van-nghi-quyet-so-1669-nq-ubtvqh15-cua-uy-ban-thuong-vu-quoc-hoi-ve-viec-sap-xep-cac-don-vi-758011
+  muc: A
+  phu:
+  - dien_tich_km2
+  - dan_so
+  - don_vi_cu_hop_thanh
+  cach_lay: html
+  xac_minh: 200
+  uu_tien: 1
+  ghi_chu: nguồn chuẩn thay cho dữ liệu gõ tay trong chuyen_sau.py
+  loai: van_ban
+- ma: hp_nq1669_cp
+  ten: NQ 1669 (Chinhphu)
+  url: https://xaydungchinhsach.chinhphu.vn/toan-van-nghi-quyet-so-1669-nq-ubtvqh15-sap-xep-cac-dvhc-cap-xa-cua-thanh-pho-hai-phong-nam-2025-119250616193209667.htm
+  muc: A
+  phu:
+  - dien_tich_km2
+  - dan_so
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: hp_nq1669_vb
+  ten: vanban.chinhphu.vn – văn bản gốc NQ 1669
+  url: https://vanban.chinhphu.vn/?pageid=27160&docid=213980
+  muc: A
+  phu:
+  - can_cu_phap_ly
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: hp_vna
+  ten: TTXVN – chi tiết sắp xếp cấp xã HP
+  url: https://nvsk.vnanet.vn/thong-tin-chi-tiet-sap-xep-cac-don-vi-hanh-chinh-cap-xa-cua-thanh-pho-hai-phong-1-172402.vna
+  muc: B
+  phu:
+  - don_vi_cu_hop_thanh
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: hp_lanh_dao
+  ten: Báo HP – Bí thư, Chủ tịch UBND 114 xã/phường/đặc khu
+  url: https://baohaiphong.vn/danh-sach-bi-thu-dang-uy-chu-tich-ubnd-114-xa-phuong-dac-khu-cua-tp-hai-phong-moi-415472.html
+  muc: A
+  phu:
+  - chu_tich_ubnd
+  cach_lay: html
+  xac_minh: 200
+  ghi_chu: số liệu 6-7/2025
+  loai: van_ban
+- ma: hp_tru_so
+  ten: VietnamNet – trụ sở 114 xã phường
+  url: https://vietnamnet.vn/hai-phong-moi-dat-tru-so-114-xa-phuong-va-2-dac-khu-o-dau-2416296.html
+  muc: B
+  phu:
+  - tru_so
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: hp_sovhttdl
+  ten: Sở VHTTDL HP (đã gồm Hải Dương)
+  url: https://sovhttdl.haiphong.gov.vn/
+  muc: A
+  phu:
+  - di_tich_xep_hang
+  - le_hoi_cua_xa
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: hp_dt_qg
+  ten: Sở VHTTDL HP – Di tích cấp quốc gia (có trang chi tiết)
+  url: https://sovhttdl.haiphong.gov.vn/di-tich-lich-su-cap-quoc-gia
+  muc: A
+  phu:
+  - di_tich_xep_hang
+  - doi_tuong_tho
+  cach_lay: html
+  xac_minh: 200
+  uu_tien: 1
+  loai: van_ban
+- ma: hp_le_hoi
+  ten: Sở VHTTDL HP – Những lễ hội tiêu biểu
+  url: https://sovhttdl.haiphong.gov.vn/nhung-le-hoi-tieu-bieu
+  muc: A
+  phu:
+  - le_hoi_cua_xa
+  - le_hoi_cap_tinh
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: hp_ocop_2025
+  ten: QĐ công nhận OCOP 2025 HP (58 SP, có chủ thể + địa chỉ)
+  url: https://cdn.haiphong.gov.vn/gov-hpg/6831/tintuc/2026/2/qd-cong-nhan-san-pham-ocop-2025-1-..signed639060091328998926.pdf
+  muc: A
+  phu:
+  - ocop
+  cach_lay: pdf
+  xac_minh: 200 (chưa kiểm text layer)
+  uu_tien: 1
+  loai: tham_khao
+- ma: hp_qgdb
+  ten: THHP – thêm 2 di tích QGĐB (tổng 942 di tích, 119 QG, 435 TP, 11 DSPVT)
+  url: https://thhp.vn/them-2-di-tich-duoc-xep-hang-di-tich-lich-su-cap-quoc-gia-dac-biet-37024.html
+  muc: B
+  phu:
+  - di_tich_quoc_gia_dac_biet
+  - di_san_phi_vat_the
+  cach_lay: html
+  xac_minh: search
+  loai: van_ban
+- ma: baohaiphong
+  ten: Báo Hải Phòng
+  url: https://baohaiphong.vn
+  muc: B
+  phu:
+  - gioi_thieu
+  - le_hoi_cua_xa
+  - nhan_vat_lich_su
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: thhp
+  ten: Báo và PT-TH Hải Phòng
+  url: https://thhp.vn
+  muc: B
+  phu:
+  - le_hoi_cua_xa
+  - gioi_thieu
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: hp_cong
+  ten: Cổng TTĐT Hải Phòng
+  url: https://haiphong.gov.vn
+  muc: A
+  phu:
+  - gioi_thieu
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban

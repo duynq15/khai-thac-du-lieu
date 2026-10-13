@@ -1,0 +1,170 @@
+# Nguồn dùng chung cho MỌI tỉnh (url có thể chứa {tinh_ma}). Chạy cùng nguồn của tỉnh.
+nguon:
+- ma: tinhthanhpho_xa
+  ten: tinhthanhpho.com – số liệu từng xã sau sáp nhập (diện tích, dân số, trụ sở, toạ độ tâm)
+  loai: bang
+  dinh_dang: json
+  url: https://www.tinhthanhpho.com/api/v1/new-provinces/{tinh_ma}/wards?limit=500
+  duong_dan: data
+  khoa_xa:
+    ma: code
+  cot:
+    dien_tich_km2: area_km2
+    dan_so: population
+    tru_so: hq_address
+  nhom: hanh_chinh_dan_cu
+  muc: B
+  nam: 2025
+  xac_minh: 200 — 3.321 xã, có legal_refs về NQ UBTVQH từng tỉnh
+  ghi_chu: Tổng hợp từ Nghị quyết UBTVQH; hạng B vì là bên thứ ba — đối chiếu NQ gốc khi duyệt
+- ma: ocop_gov
+  ten: Cổng OCOP Quốc gia (ocop.gov.vn) — lọc theo xã của tỉnh
+  loai: adapter
+  module: ocop
+  url: http://ocop.gov.vn
+  muc: A
+- ma: dsvh_qgdb
+  ten: Cục Di sản – Danh mục di tích quốc gia đặc biệt
+  url: https://dsvh.gov.vn/danh-muc-di-tich-quoc-gia-dac-biet-1752
+  muc: A
+  phu:
+  - di_tich_quoc_gia_dac_biet
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: dsvh_qg
+  ten: Cục Di sản – Danh mục di tích quốc gia
+  url: https://dsvh.gov.vn/danh-muc-di-tich-quoc-gia-1751
+  muc: A
+  phu:
+  - di_tich_quoc_gia
+  - di_tich_xep_hang
+  cach_lay: html
+  xac_minh: 200 (nội dung chưa kiểm)
+  loai: van_ban
+- ma: dsvh_goc
+  ten: Cục Di sản – menu danh mục (di tích, phi vật thể)
+  url: https://dsvh.gov.vn/danh-muc-di-tich
+  muc: A
+  phu:
+  - di_san_phi_vat_the
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: cp_qgdb_2026
+  ten: Chinhphu – Danh sách di tích QGĐB (cập nhật 02/2026)
+  url: https://xaydungchinhsach.chinhphu.vn/danh-sach-di-tich-quoc-gia-dac-biet-119260211160043009.htm
+  muc: A
+  phu:
+  - di_tich_quoc_gia_dac_biet
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: wiki_dtqg
+  ten: Wikipedia – Danh sách Di tích quốc gia Việt Nam
+  url: https://vi.wikipedia.org/wiki/Danh_s%C3%A1ch_Di_t%C3%ADch_qu%E1%BB%91c_gia_Vi%E1%BB%87t_Nam
+  muc: C
+  phu:
+  - di_tich_xep_hang
+  - nam_cong_nhan
+  cach_lay: html
+  xac_minh: 200
+  ghi_chu: wikitable có năm xếp hạng — đối chiếu với dsvh
+  loai: van_ban
+- ma: wiki_lang_nghe
+  ten: Wikipedia – Danh sách làng nghề truyền thống VN
+  url: https://vi.wikipedia.org/wiki/Danh_s%C3%A1ch_l%C3%A0ng_ngh%E1%BB%81_truy%E1%BB%81n_th%E1%BB%91ng_Vi%E1%BB%87t_Nam
+  muc: C
+  phu:
+  - lang_nghe
+  cach_lay: html
+  xac_minh: search
+  loai: van_ban
+- ma: cp_ocop5
+  ten: Chinhphu – Danh sách OCOP 5 sao
+  url: https://xaydungchinhsach.chinhphu.vn/danh-sach-san-pham-ocop-5-sao-119260408171050959.htm
+  muc: A
+  phu:
+  - ocop
+  - ocop_tieu_bieu
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: mae_ocop5_2025
+  ten: Bộ NN&MT – 47 SP OCOP 5 sao đợt 1/2025
+  url: https://mae.gov.vn/47-san-pham-uoc-cong-nhan-ocop-5-sao-ot-1-nam-2025-18761.htm
+  muc: A
+  phu:
+  - ocop
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: sanphamvungmien
+  ten: Sản phẩm vùng miền – tin OCOP theo tỉnh
+  url: https://sanphamvungmien.vn
+  muc: B
+  phu:
+  - ocop
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: gh_thanglequoc
+  ten: GitHub vietnamese-provinces-database (34 tỉnh/3.321 xã, SQL, GeoJSON)
+  url: https://github.com/thanglequoc/vietnamese-provinces-database
+  muc: C
+  phu:
+  - ranh_gioi_vi_tri
+  - ma_dvhc
+  cach_lay: api
+  xac_minh: 200 (GeoJSON chưa tải kiểm)
+  loai: tham_khao
+- ma: gh_free_gis
+  ten: GitHub Free-GIS-Data (34 tỉnh sau sáp nhập)
+  url: https://github.com/nguyenduy1133/Free-GIS-Data
+  muc: C
+  phu:
+  - ranh_gioi_vi_tri
+  cach_lay: api
+  xac_minh: 200 (chưa rõ có cấp xã)
+  loai: tham_khao
+- ma: gh_xaphuong2025
+  ten: GitHub vn-xaphuong-2025 (mã xã 2025, JSON)
+  url: https://github.com/phucanhle/vn-xaphuong-2025
+  muc: C
+  phu:
+  - ma_dvhc
+  cach_lay: api
+  xac_minh: 200
+  loai: tham_khao
+- ma: sapnhap_bando
+  ten: Tra cứu sáp nhập + bản đồ (bando.com.vn)
+  url: https://sapnhap.bando.com.vn/
+  muc: B
+  phu:
+  - don_vi_cu_chi_tiet
+  - ranh_gioi_vi_tri
+  cach_lay: js
+  xac_minh: 200
+  loai: tham_khao
+- ma: nso
+  ten: Cục Thống kê – Niên giám 2025 (cấp tỉnh)
+  url: https://www.nso.gov.vn/default/2026/07/nien-giam-thong-ke-2025/
+  muc: A
+  phu:
+  - dan_so
+  - dien_tich_km2
+  cach_lay: xlsx
+  xac_minh: 200
+  loai: tham_khao
+- ma: wiki_xa
+  ten: Wikipedia tiếng Việt – bài từng xã/phường
+  url: https://vi.wikipedia.org/w/api.php
+  muc: C
+  phu:
+  - gioi_thieu
+  - dien_cach_hanh_chinh
+  - nguon_goc_ten_xa
+  cach_lay: api
+  xac_minh: 200
+  ghi_chu: đã dùng trong khai_thac/nguon/wikipedia.py
+  loai: tham_khao

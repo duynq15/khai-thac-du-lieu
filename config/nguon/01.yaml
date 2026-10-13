@@ -1,0 +1,163 @@
+# Nguồn khai thác của Hà Nội — agent/người thêm nguồn chỉ cần sửa tệp này.
+# cong_xa.mau: mẫu cổng riêng của xã ({slug} = tên bỏ tiền tố, bỏ dấu; {loai} = xa|phuong|dackhu)
+# bbox: [lat_min, lat_max, lon_min, lon_max] để kiểm toạ độ "trong tỉnh"
+# nguon[].loai: bang (có cấu trúc → chạy `khai-thac nguon`) | van_ban (trang đưa vào LLM) | tham_khao
+# Xác minh URL: 2026-10-13 (xem cột xac_minh). Định dạng nguồn bang: xem khai_thac/nguon/bang.py
+ten: Hà Nội
+nghi_quyet: 1656/NQ-UBTVQH15 (16/6/2025)
+cong_xa:
+  mau: https://{slug}.hanoi.gov.vn
+bbox:
+- 20.5
+- 21.5
+- 105.2
+- 106.1
+nguon:
+- ma: hn_nq1656
+  ten: NQ 1656 toàn văn (diện tích, dân số, đơn vị cũ từng xã)
+  url: https://xaydungchinhsach.chinhphu.vn/toan-van-nghi-quyet-so-1656-nq-ubtvqh15-sap-xep-cac-dvhc-cap-xa-cua-thanh-pho-ha-noi-nam-2025-119250616192433872.htm
+  muc: A
+  phu:
+  - dien_tich_km2
+  - dan_so
+  - don_vi_cu_hop_thanh
+  cach_lay: html
+  xac_minh: 200
+  uu_tien: 1
+  loai: van_ban
+- ma: hn_tru_so
+  ten: Chinhphu – Danh sách trụ sở 126 xã phường (TB 729/TB-UBND)
+  url: https://xaydungchinhsach.chinhphu.vn/danh-sach-tru-so-126-xa-phuong-moi-cua-ha-noi-119250626083822994.htm
+  muc: A
+  phu:
+  - tru_so
+  cach_lay: html
+  xac_minh: 200
+  uu_tien: 1
+  loai: van_ban
+- ma: hn_lanh_dao
+  ten: Chinhphu – Bí thư, Chủ tịch HĐND/UBND 126 xã phường
+  url: https://xaydungchinhsach.chinhphu.vn/danh-sach-bi-thu-chu-tich-hdnd-ubnd-126-xa-phuong-moi-cua-ha-noi-119250630125913933.htm
+  muc: A
+  phu:
+  - chu_tich_ubnd
+  cach_lay: html
+  xac_minh: 200
+  ghi_chu: số liệu 6/2025, có thể đã đổi nhân sự — gắn nam_du_lieu=2025
+  loai: van_ban
+- ma: hn_hcc_pdf
+  ten: PDF 126 điểm phục vụ HCC + đường dây nóng
+  url: https://sqhx-hanoi.mediacdn.vn/91579363132710912/2025/7/7/phu-luc-126-diem-phuc-vu-hanh-chinh-cong-thuoc-xa-va-cac-chi-nhanh-duong-day-nong-1751857119012548747852.pdf
+  muc: A
+  phu:
+  - dien_thoai
+  - tru_so
+  cach_lay: pdf
+  xac_minh: 200 (chưa kiểm text layer)
+  loai: tham_khao
+- ma: hn_126_hanoimoi
+  ten: Hà Nội Mới – Chi tiết 126 đơn vị cấp xã
+  url: https://hanoimoi.vn/chi-tiet-126-don-vi-hanh-chinh-cap-xa-cua-thanh-pho-ha-noi-nam-2025-705784.html
+  muc: B
+  phu:
+  - don_vi_cu_hop_thanh
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: hn_cong
+  ten: Cổng TTĐT Hà Nội
+  url: https://hanoi.gov.vn
+  muc: A
+  phu:
+  - gioi_thieu
+  cach_lay: html
+  xac_minh: 200 (không có trang danh bạ xã)
+  loai: van_ban
+- ma: hn_sovhtt
+  ten: Sở VHTT Hà Nội – quyết định xếp hạng di tích cấp TP
+  url: https://sovhtt.hanoi.gov.vn/
+  muc: A
+  phu:
+  - di_tich_xep_hang
+  - le_hoi_cua_xa
+  cach_lay: html
+  xac_minh: 000 — thử lại qua trình duyệt
+  loai: van_ban
+- ma: hn_dt_2025
+  ten: Hà Nội Mới – xếp hạng 9 di tích cấp TP (QĐ 2859/QĐ-UBND 10/6/2025)
+  url: https://hanoimoi.vn/ha-noi-xep-hang-9-di-tich-lich-su-van-hoa-cap-thanh-pho-705143.html
+  muc: B
+  phu:
+  - di_tich_xep_hang
+  - nam_cong_nhan
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: hn_dt_thanglong
+  ten: Chinhphu Thăng Long – 9 di tích & danh thắng
+  url: https://thanglong.chinhphu.vn/ha-noi-xep-hang-9-di-tich-lich-su-van-hoa-va-danh-lam-thang-canh-103250611103245268.htm
+  muc: B
+  phu:
+  - di_tich_xep_hang
+  cach_lay: html
+  xac_minh: search
+  loai: van_ban
+- ma: hn_ocop_2025
+  ten: OCOP Hà Nội 2025 – 73 sản phẩm
+  url: https://sanphamvungmien.vn/chuong-trinh-ocop/tin-tuc-ocop/2026/1/ha-noi-phan-hang-cap-giay-chung-nhan-doi-voi-73-san-pham-ocop
+  muc: B
+  phu:
+  - ocop
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: hn_lang_nghe
+  ten: Hà Nội Mới – Làng nghề Hà Nội (tổng quan 337 làng)
+  url: https://hanoimoi.vn/lang-nghe-ha-noi-cong-nhan-de-bao-ton-va-phat-trien-ben-vung-699380.html
+  muc: B
+  phu:
+  - lang_nghe
+  cach_lay: html
+  xac_minh: search
+  ghi_chu: chưa có danh sách đầy đủ
+  loai: van_ban
+- ma: hanoimoi
+  ten: Báo Hà Nội Mới
+  url: https://hanoimoi.vn
+  muc: B
+  phu:
+  - le_hoi_cua_xa
+  - nhan_vat_lich_su
+  - gioi_thieu
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: kinhtedothi
+  ten: Báo Kinh tế & Đô thị
+  url: https://kinhtedothi.vn
+  muc: B
+  phu:
+  - gioi_thieu
+  - le_hoi_cua_xa
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban
+- ma: hn_thuvien
+  ten: Thư viện Hà Nội (địa chí)
+  url: https://thuvien.hanoi.gov.vn
+  muc: B
+  phu:
+  - dien_cach_hanh_chinh
+  - tich_lang
+  cach_lay: html
+  xac_minh: 200 (chưa thấy thư viện số)
+  loai: van_ban
+- ma: thanhuyhanoi
+  ten: Thành ủy Hà Nội
+  url: https://thanhuyhanoi.vn
+  muc: C
+  phu:
+  - gioi_thieu
+  cach_lay: html
+  xac_minh: 200
+  loai: van_ban

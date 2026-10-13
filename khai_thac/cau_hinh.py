@@ -55,6 +55,19 @@ def ds_nhom(cap: str) -> list[str]:
     return list((truong_du_lieu().get("cap", {}).get(cap, {}).get("nhom", {}) or {}).keys())
 
 
+@lru_cache(maxsize=None)
+def nguon_tinh(tinh_ma: str | None) -> dict:
+    """Cấu hình nguồn của một tỉnh: config/nguon/<mã>.yaml (cong_xa, bbox, nguon[]).
+
+    Tỉnh chưa có tệp → {} (vẫn chạy được bằng Wikipedia + tìm kiếm).
+    """
+    p = THU_MUC_CFG / "nguon" / f"{tinh_ma}.yaml"
+    if not tinh_ma or not p.is_file():
+        return {}
+    with open(p, encoding="utf-8") as f:
+        return yaml.safe_load(f) or {}
+
+
 def thong_tin_nguon(ma: str) -> dict:
     for n in nguon().get("nguon", []):
         if n["ma"] == ma:
