@@ -80,6 +80,10 @@ def _chay(args, *, tinh_ma: str | None, nhom: list[str] | None) -> int:
         from .nguon import trinh_duyet
 
         trinh_duyet.tat()
+    from . import quy_trinh
+
+    quy_trinh.CHE_DO_LLM = ("xuat" if getattr(args, "xuat_nguon", False)
+                            else "tep" if getattr(args, "llm_tu_tep", False) else "ollama")
     bo_qua = bool(cau_hinh.lay_ho_so("lo", "bo_qua_da_co", mac_dinh=True)) and not args.lam_lai
     pham_vi = getattr(args, "ma", None) if args.fn is cmd_xa else None
     print(f"Khai thác {pham_vi or getattr(args, 'ten', None) or (f'tỉnh {tinh_ma}' if tinh_ma else 'toàn quốc')}"
@@ -219,6 +223,32 @@ def cmd_thong_ke(args) -> int:
         pn,
     ):
         print(f"  {r['nhom']:18} {r['n']:>6} xã · {r['dat'] or 0:>6} trường đạt")
+    kho.dong()
+    return 0
+
+
+NHOM_LLM = ["hanh_chinh_dan_cu", "lich_su_dia_danh", "di_tich", "le_hoi", "kinh_te_van_hoa", "con_nguoi"]
+
+
+def cmd_nap_llm(args) -> int:
+    """Nạp trả lời của LLM ngoài (du_lieu/llm_ra/<mã>.json) vào kho, xã nào đã nạp thì bỏ qua."""
+    from . import quy_trinh
+    from .nguon import trinh_duyet
+
+    trinh_duyet.tat()
+    quy_trinh.CHE_DO_LLM = "tep"
+    kho = _kho(args)
+    da = set() if args.lam_lai else kho.da_xu_ly_ds(",".join(sorted(NHOM_LLM)))
+    ds = [p.stem for p in sorted(quy_trinh.LLM_RA.glob("*.json"))
+          if p.stem not in da and (not args.ma or p.stem in args.ma)]
+    dat = tong = 0
+    for ma in ds:
+        rows = kho.tim_don_vi(ma=ma, cap="xa")
+        if rows:
+            kq = chay_tinh(kho, rows[0]["tinh_ma"], ma=ma, nhom=NHOM_LLM, bo_qua_da_co=False)
+            tong += len(kq)
+            dat += sum(1 for k in kq if k.trang_thai == "dat")
+    print(f"Đã nạp {len(ds)} xã · {dat}/{tong} trường đạt.")
     kho.dong()
     return 0
 
@@ -366,6 +396,10 @@ def tao_parser() -> argparse.ArgumentParser:
     ti.add_argument("--lam-lai", action="store_true", help="Không bỏ qua đơn vị đã đạt")
     ti.add_argument("--dung-llm", dest="dung_llm", action="store_true", default=True)
     ti.add_argument("--khong-llm", dest="dung_llm", action="store_false")
+    ti.add_argument("--xuat-nguon", action="store_true",
+                    help="Không gọi Ollama: ghi đề bài LLM từng xã vào du_lieu/llm_vao/ (cho Claude/agent)")
+    ti.add_argument("--llm-tu-tep", action="store_true",
+                    help="Không gọi Ollama: nạp trả lời từ du_lieu/llm_ra/<mã>.json")
     ti.add_argument("--khong-trinh-duyet", action="store_true",
                     help="Không mở Chrome (pha LLM: chỉ cache + HTTP tĩnh, tránh treo)")
     ti.add_argument("--xuat", nargs="*", default=None, help="json excel")
@@ -405,6 +439,11 @@ def tao_parser() -> argparse.ArgumentParser:
     ng.add_argument("--tep", help="adapter phap_ly: đường dẫn PDF/Excel tải tay")
     ng.add_argument("--gioi-han", type=int, default=None, help="adapter: chỉ xét N sản phẩm (chạy thử)")
     ng.set_defaults(fn=cmd_nguon)
+
+    nl = sub.add_parser("nap-llm", help="Nạp trả lời LLM ngoài từ du_lieu/llm_ra/ (qua cùng bước kiểm)")
+    nl.add_argument("--ma", nargs="*", help="Chỉ nạp các mã này")
+    nl.add_argument("--lam-lai", action="store_true", help="Nạp lại cả xã đã nạp")
+    nl.set_defaults(fn=cmd_nap_llm)
 
     dm = sub.add_parser("do-mang", help="Dò request AJAX/API của một trang (SPA)")
     dm.add_argument("--url", required=True)

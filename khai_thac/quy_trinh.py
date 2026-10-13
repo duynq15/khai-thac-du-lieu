@@ -7,6 +7,7 @@ import re
 import signal
 import sqlite3
 from datetime import datetime
+from pathlib import Path
 
 from . import cau_hinh
 from .kiem_tra import kiem
@@ -300,12 +301,72 @@ def _boc_quy_tac(truong_cfg: dict, nguons: list[dict], *, ten_don_vi: str | None
     return None, None, None
 
 
-def _boc_llm_hang_loat(cho_llm: list[dict], nguons: list[dict], dung_llm: bool) -> dict:
+# LLM ngoài (Claude Code/agent): `--xuat-nguon` ghi đề bài từng xã vào LLM_VAO, agent ghi
+# trả lời vào LLM_RA, `--llm-tu-tep` nạp lại. Cùng prompt, cùng bước kiểm trích dẫn như Ollama.
+CHE_DO_LLM = "ollama"   # ollama | xuat | tep
+LLM_VAO = Path(__file__).resolve().parent.parent / "du_lieu" / "llm_vao"
+LLM_RA = Path(__file__).resolve().parent.parent / "du_lieu" / "llm_ra"
+
+
+def _xuat_de_bai(ma: str, ten: str, cho_llm: list[dict], nguons: list[dict]) -> None:
+    LLM_VAO.mkdir(parents=True, exist_ok=True)
+    (LLM_VAO / f"{ma}.json").write_text(json.dumps({
+        "ma": ma, "ten": ten,
+        "nguon": [{"i": i, "url": n["url"], "muc": n["muc"], "nguon_ma": n.get("nguon_ma"),
+                   "nguon_ten": n.get("nguon_ten"), "van_ban": n["van_ban"][:8000]}
+                  for i, n in enumerate(nguons[:3])],
+        "prompt": ollama._prompt("<VAN_BAN_NGUON_i>", cho_llm),
+    }, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
+def _nguon_tu_de_bai(ma: str) -> list[dict] | None:
+    """Nguồn ĐÚNG như lúc xuất đề bài (thứ tự khớp nguon_i của trả lời); không có tệp → None."""
+    p = LLM_VAO / f"{ma}.json"
+    if not p.is_file():
+        return None
+    out = []
+    for n in json.loads(p.read_text(encoding="utf-8"))["nguon"]:
+        ma_n = n.get("nguon_ma") or ("wikipedia_vi" if "wikipedia.org" in n["url"]
+                                     else "govvn" if n["muc"] in ("A", "B") else "nguon_khac")
+        out.append({"nguon_ma": ma_n, "nguon_ten": n.get("nguon_ten") or n["url"],
+                    "url": n["url"], "muc": n["muc"], "van_ban": n["van_ban"]})
+    return out
+
+
+def _doc_tra_loi(ma: str, cho_llm: list[dict], nguons: list[dict]) -> dict:
+    """LLM_RA/<ma>.json = {"ket_qua": [{khoa, gia_tri, trich_doan, nam, nguon_i}]}."""
+    p = LLM_RA / f"{ma}.json"
+    if not p.is_file():
+        return {}
+    try:
+        du = json.loads(p.read_text(encoding="utf-8"))
+    except ValueError:
+        print(f"    ! {p.name}: JSON hỏng", flush=True)
+        return {}
+    can = {t["khoa"] for t in cho_llm}
+    kq: dict = {}
+    for o in du.get("ket_qua") or []:
+        k, i = o.get("khoa"), o.get("nguon_i", 0)
+        if k in can and o.get("gia_tri") not in (None, "", []) and isinstance(i, int) and 0 <= i < len(nguons[:3]):
+            kq[k] = (o["gia_tri"], {**nguons[i], "nam": ollama._tach_du({"ket_qua": [o]})[k]["nam"]},
+                     ollama._tach_du({"ket_qua": [o]})[k]["trich_doan"])
+    return kq
+
+
+def _boc_llm_hang_loat(cho_llm: list[dict], nguons: list[dict], dung_llm: bool,
+                       don_vi: dict | None = None) -> dict:
     """Gọi LLM MỘT lần cho tất cả trường cần — nhanh hơn gọi từng trường rất nhiều.
 
     Trả {khoa: (gia_tri, nguon, trich_doan)}.
     """
-    if not dung_llm or not cho_llm or not nguons or not ollama.san_sang():
+    if not dung_llm or not cho_llm or not nguons:
+        return {}
+    if CHE_DO_LLM == "xuat" and don_vi:
+        _xuat_de_bai(don_vi["ma"], don_vi["ten"], cho_llm, nguons)
+        return {}
+    if CHE_DO_LLM == "tep" and don_vi:
+        return _doc_tra_loi(don_vi["ma"], cho_llm, nguons)
+    if not ollama.san_sang():
         return {}
     con_lai = list(cho_llm)
     ket_qua: dict = {}
@@ -410,13 +471,19 @@ def khai_thac_don_vi(don_vi: sqlite3.Row | dict, nhom: str, *, cap: str = "xa",
                 gia_tri = tach if len(tach) > 1 else gia_tri
             if t.get("kieu") == "ban_ghi" and t.get("cach_lay") == "llm":
                 gia_tri, bo = chuan_ban_ghi(gia_tri, (nguon or {}).get("van_ban"))
+            elif t.get("kieu") == "danh_sach" and t.get("cach_lay") == "llm" \
+                    and isinstance(gia_tri, list) and (nguon or {}).get("van_ban"):
+                # Mục nào không có nguyên văn trong nguồn (LLM tự đặt tên) thì bỏ
+                goc = chuan_hoa(nguon["van_ban"])
+                bo = [str(x) for x in gia_tri if chuan_hoa(str(x)) not in goc]
+                gia_tri = [x for x in gia_tri if str(x) not in bo] or None
 
         nguon_van_ban = nguon.get("van_ban") if nguon else None
         trang_thai, diem, ly_do, canh_bao = kiem(
             t, gia_tri, trich_doan=trich, nguon_van_ban=nguon_van_ban, boi_canh=boi_canh,
         )
-        if t.get("kieu") == "ban_ghi" and t.get("cach_lay") == "llm" and bo:
-            canh_bao.append(f"Bỏ {len(bo)} bản ghi không có tên trong nguồn: {', '.join(bo)[:200]}")
+        if bo:
+            canh_bao.append(f"Bỏ {len(bo)} mục không có nguyên văn trong nguồn: {', '.join(bo)[:200]}")
 
         kq.append(KetQua(
             don_vi_ma=d["ma"], don_vi_ten=d["ten"], cap=cap, nhom=nhom, truong=khoa,
@@ -527,6 +594,8 @@ def chay_tinh(kho: Kho, tinh_ma: str | None, *, nhom: list[str] | None = None,
 
     nhom_list = nhom or (NHOM_XA if cap == "xa" else cau_hinh.ds_nhom(cap))
     nhom_key = (cap + ":" if cap != "xa" else "") + ",".join(sorted(nhom_list))
+    if CHE_DO_LLM == "xuat":
+        nhom_key = "xuat:" + nhom_key   # dấu "đã xuất đề bài" tách khỏi dấu "đã xong"
     can_mang = any(n in NHOM_CAN_MANG for n in nhom_list)
 
     ds_xa = kho.tim_don_vi(tinh_ma=tinh_ma, ma=ma, ten=ten, tinh_ten=tinh_ten, cap=cap,
@@ -549,7 +618,9 @@ def chay_tinh(kho: Kho, tinh_ma: str | None, *, nhom: list[str] | None = None,
     for i, dv in enumerate(ds_xa, 1):
         try:
             _dat_bao_thuc(GIO_MOI_XA)
-            nguons = gom_nguon_van_ban(dict(dv)) if can_mang else []
+            nguons = _nguon_tu_de_bai(dv["ma"]) if CHE_DO_LLM == "tep" else None
+            if nguons is None:
+                nguons = gom_nguon_van_ban(dict(dv)) if can_mang else []
             # Gộp mọi trường LLM của các nhóm để gọi LLM MỘT lần cho cả xã
             truong_llm: list[dict] = []
             da_co: set[str] = set()
@@ -563,7 +634,7 @@ def chay_tinh(kho: Kho, tinh_ma: str | None, *, nhom: list[str] | None = None,
                     if t.get("cach_lay") == "llm" and t["khoa"] not in da_co | da_co_cau_truc:
                         da_co.add(t["khoa"])
                         truong_llm.append(t)
-            llm_da_boc = _boc_llm_hang_loat(truong_llm, nguons, dung_llm) if truong_llm else {}
+            llm_da_boc = _boc_llm_hang_loat(truong_llm, nguons, dung_llm, dict(dv)) if truong_llm else {}
             kq_xa: list[KetQua] = []
             for nh in nhom_list:
                 kq_xa += khai_thac_don_vi(dv, nh, cap=cap, nguons=nguons, dung_llm=dung_llm,
@@ -589,6 +660,10 @@ def chay_tinh(kho: Kho, tinh_ma: str | None, *, nhom: list[str] | None = None,
             print(f"  ✗ {dv['ten']}: lỗi {type(e).__name__}: {e}", flush=True)
             continue
         _tat_bao_thuc()
+        if CHE_DO_LLM == "xuat":   # chỉ xuất đề bài, chưa có kết quả LLM → không ghi kho
+            kho.danh_dau_da_xu_ly(nhom_key, dv["ma"])
+            print(f"  [{i}/{len(ds_xa)}] {dv['ten']}: đã xuất đề bài", flush=True)
+            continue
         kho.ghi_ket_qua(kq_xa, luot.ma)
         kho.danh_dau_da_xu_ly(nhom_key, dv["ma"])   # đánh dấu để chạy lại tiếp đúng chỗ
         tat_ca += kq_xa

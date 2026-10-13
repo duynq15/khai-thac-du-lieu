@@ -116,9 +116,11 @@ def boc_theo_truong(van_ban: str, truong: str) -> tuple[str, str] | None:
     # Chủ tịch UBND: bắt tên theo mẫu (sau từ khoá, hoặc trước từ khoá ở chân trang)
     if truong == "chu_tich_ubnd":
         for mau in (_CHU_TICH_TRUOC, _CHU_TICH):
-            m = mau.search(van_ban)
-            if m:
-                return m.group(1).strip(), rut_gon(m.group(0), 200)
+            for m in mau.finditer(van_ban):
+                ten = m.group(1).strip()
+                # IGNORECASE làm [A-ZĐ] khớp cả chữ thường → tự kiểm: mọi từ phải viết hoa đầu
+                if all(w[0].isupper() for w in ten.split()):
+                    return ten, rut_gon(m.group(0), 200)
 
     for cau in tach_cau(van_ban):
         chu = cau.lower()
