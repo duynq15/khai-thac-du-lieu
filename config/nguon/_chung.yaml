@@ -13,7 +13,9 @@ nguon:
     dan_so: population
     tru_so: hq_address
     ranh_gioi_vi_tri: [centroid_lat, centroid_lng]
-  nhom: hanh_chinh_dan_cu
+  # Không khai `nhom` ở đây: mỗi trường tự về nhóm của nó trong config/truong_du_lieu.yaml
+  # (diện tích/dân số/trụ sở → hành chính – dân cư, toạ độ → thông tin chung). Khai một nhóm
+  # chung cho cả nguồn thì toạ độ bị xếp nhầm nhóm và màn xuất không thấy.
   muc: B
   nam: 2025
   xac_minh: 200 — 3.321 xã, có legal_refs về NQ UBTVQH từng tỉnh
