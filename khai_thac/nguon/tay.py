@@ -33,6 +33,7 @@ TINH_CU_SANG_MOI = {
 
 
 _BO_TIEN_TO = re.compile(r"^(xã|phường|thị trấn|đặc khu)\s+", re.IGNORECASE)
+_BO_NGOAC = re.compile(r"\s*\([^)]*\)")   # "Phường Bến Thành (Quận 1)" → "Phường Bến Thành"
 
 
 def _dau(s: str) -> str:
@@ -69,7 +70,21 @@ def nap_tep(kho: Kho, p: Path) -> dict:
             ten_xa.update({r["ma"]: r["ten"] for r in ds})
             # Khớp đúng dấu trước: chuan_hoa bỏ dấu làm trùng "Thanh An"/"Thạnh An", "Cẩm Giang"/"Cẩm Giàng"
             dung_dau[tinh] = {_dau(t): r["ma"] for r in ds for t in (r["ten"], _BO_TIEN_TO.sub("", r["ten"]))}
+            # Tên CŨ không có trong tên mới ("Phường Bến Thành" của 26743): chỉ nhận khi
+            # tên đó ứng với đúng MỘT đơn vị mới, tránh "Phường 1" của nhiều quận khác nhau.
+            ung: dict[str, set[str]] = {}
+            for r in kho.conn.execute(
+                    "SELECT ma, don_vi_cu_hop_thanh FROM don_vi WHERE tinh_ma = ?"
+                    " AND don_vi_cu_hop_thanh IS NOT NULL", (tinh,)):
+                for ten in json.loads(r[1] or "[]"):
+                    k = _dau(_BO_NGOAC.sub(" ", ten))
+                    ung.setdefault(k, set()).add(r[0])
+            for k, ma_set in ung.items():
+                if len(ma_set) == 1:
+                    dung_dau[tinh].setdefault(k, next(iter(ma_set)))
+        ten_can = _BO_NGOAC.sub(" ", d["ten_xa"])   # nguồn hay ghi kèm "(Quận 1)"
         ma = (dung_dau[tinh].get(_dau(d["ten_xa"])) or dung_dau[tinh].get(_dau(_BO_TIEN_TO.sub("", d["ten_xa"])))
+              or dung_dau[tinh].get(_dau(ten_can)) or dung_dau[tinh].get(_dau(_BO_TIEN_TO.sub("", ten_can)))
               or Kho.tim_ma_xa(ban_do[tinh], d["ten_xa"]))
         if not ma:
             khong_khop.append(d["ten_xa"])
