@@ -84,6 +84,8 @@ def kiem(
 
         elif qt == "dien_thoai":
             so = re.sub(r"[\s.\-()]", "", str(gia_tri))
+            if so.startswith(("1800", "1900")):   # tổng đài chung (vd 18001260 của Đà Nẵng), không phải số xã
+                return "loi", 0, f"Số tổng đài, không phải số UBND xã: {gia_tri}", canh_bao
             if not _DIEN_THOAI.match(so):
                 canh_bao.append(f"Số điện thoại chưa chuẩn: {gia_tri}")
                 diem = _diem_tru(diem, 30)
