@@ -118,7 +118,7 @@ cap:
       lich_su_dia_danh:
         nhan: Lịch sử – Địa danh
         truong:
-          - {khoa: dien_cach_hanh_chinh, nhan: Điền cách hành chính, kieu: van_ban, cach_lay: llm}
+          - {khoa: dien_cach_hanh_chinh, nhan: Diên cách hành chính, kieu: van_ban, cach_lay: llm}
           - {khoa: nguon_goc_ten_xa, nhan: Nguồn gốc tên xã, kieu: van_ban, cach_lay: llm, kiem_tra: [co_trich_dan]}
 
       di_tich:

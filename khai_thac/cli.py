@@ -29,6 +29,14 @@ def _ds_tu_db(kho: Kho, args) -> list[KetQua]:
     return [_tu_dong(r) for r in dong]
 
 
+def _kieu_truong(r) -> str:
+    """Kiểu theo cấu hình trường (nguồn chân lý); kho cũ có thể ghi sai kiểu (số ghi 'van_ban')."""
+    for t in cau_hinh.ds_truong(r["cap"], r["nhom"]):
+        if t["khoa"] == r["truong"]:
+            return t.get("kieu", "van_ban")
+    return r["kieu"] or "van_ban"
+
+
 def _gia_tri(raw: str | None, kieu: str | None):
     """Kho lưu giá trị không phải chuỗi dạng JSON ('null', '[...]', '48.68') → giải mã về đúng kiểu.
 
@@ -50,7 +58,7 @@ def _tu_dong(r) -> KetQua:
     import json
     return KetQua(
         don_vi_ma=r["don_vi_ma"], don_vi_ten=r["don_vi_ten"], cap=r["cap"], nhom=r["nhom"],
-        truong=r["truong"], gia_tri=_gia_tri(r["gia_tri"], r["kieu"]), kieu=r["kieu"] or "van_ban",
+        truong=r["truong"], gia_tri=_gia_tri(r["gia_tri"], _kieu_truong(r)), kieu=_kieu_truong(r),
         nguon_ma=r["nguon_ma"], nguon_ten=r["nguon_ten"], nguon_url=r["nguon_url"],
         nguon_muc=r["nguon_muc"], trich_doan=r["trich_doan"], diem_tin=r["diem_tin"] or 0,
         trang_thai=r["trang_thai"], ly_do_loi=r["ly_do_loi"],
