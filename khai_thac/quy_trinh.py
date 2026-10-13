@@ -242,7 +242,7 @@ def chuan_ban_ghi(gia_tri, nguon_van_ban: str | None) -> tuple[list[dict] | None
     ds = []
     for x in gia_tri if isinstance(gia_tri, list) else []:
         x = {"ten": x} if isinstance(x, str) else x
-        if isinstance(x, dict) and str(x.get("ten") or "").strip():
+        if isinstance(x, dict) and str(x.get("ten") or "").strip() not in ("", "null", "None"):
             ds.append({k: v for k, v in x.items() if v not in (None, "", "null")})
     bo: list[str] = []
     if nguon_van_ban:
@@ -314,7 +314,11 @@ def _boc_llm_hang_loat(cho_llm: list[dict], nguons: list[dict], dung_llm: bool) 
     for n in nguons[:3]:
         if not con_lai:
             break
-        du = ollama.boc(n["van_ban"], con_lai, model=model, timeout=90.0)
+        # ponytail: tối đa 6 trường mỗi lần gọi — model 3B sinh JSON dài hay bị cắt giữa chừng;
+        # model lớn hơn thì nâng cỡ lô để giảm số lần gọi.
+        du: dict = {}
+        for i in range(0, len(con_lai), 6):
+            du.update(ollama.boc(n["van_ban"], con_lai[i:i + 6], model=model, timeout=90.0))
         for t in list(con_lai):
             k = t["khoa"]
             o = du.get(k)
@@ -395,6 +399,7 @@ def khai_thac_don_vi(don_vi: sqlite3.Row | dict, nhom: str, *, cap: str = "xa",
         tu_danh_muc = _tu_danh_muc(khoa, d)
 
         # Chuẩn hoá kiểu
+        bo: list[str] = []
         if gia_tri is not None:
             if t.get("kieu") == "so" and not isinstance(gia_tri, (int, float)) \
                     and not isinstance(gia_tri, (list, dict)):
