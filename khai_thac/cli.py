@@ -29,11 +29,28 @@ def _ds_tu_db(kho: Kho, args) -> list[KetQua]:
     return [_tu_dong(r) for r in dong]
 
 
+def _gia_tri(raw: str | None, kieu: str | None):
+    """Kho lưu giá trị không phải chuỗi dạng JSON ('null', '[...]', '48.68') → giải mã về đúng kiểu.
+
+    Văn bản thường (không phải JSON hợp lệ) giữ nguyên.
+    """
+    import json
+
+    if raw is None:
+        return None
+    if kieu in ("so", "danh_sach", "ban_ghi", "toa_do") or raw in ("null", "[]", "{}"):
+        try:
+            return json.loads(raw)
+        except ValueError:
+            return raw
+    return raw
+
+
 def _tu_dong(r) -> KetQua:
     import json
     return KetQua(
         don_vi_ma=r["don_vi_ma"], don_vi_ten=r["don_vi_ten"], cap=r["cap"], nhom=r["nhom"],
-        truong=r["truong"], gia_tri=r["gia_tri"], kieu=r["kieu"] or "van_ban",
+        truong=r["truong"], gia_tri=_gia_tri(r["gia_tri"], r["kieu"]), kieu=r["kieu"] or "van_ban",
         nguon_ma=r["nguon_ma"], nguon_ten=r["nguon_ten"], nguon_url=r["nguon_url"],
         nguon_muc=r["nguon_muc"], trich_doan=r["trich_doan"], diem_tin=r["diem_tin"] or 0,
         trang_thai=r["trang_thai"], ly_do_loi=r["ly_do_loi"],

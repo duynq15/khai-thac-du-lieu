@@ -100,7 +100,7 @@ cap:
           - {khoa: dien_thoai, nhan: Điện thoại, kieu: dien_thoai, cach_lay: llm, kiem_tra: [dien_thoai]}
           - {khoa: email, nhan: Email, kieu: email, cach_lay: llm, kiem_tra: [email]}
           - {khoa: gio_lam_viec, nhan: Giờ làm việc, kieu: van_ban, cach_lay: llm}
-          - {khoa: chu_tich_ubnd, nhan: Chủ tịch UBND, kieu: van_ban, cach_lay: llm, kiem_tra: [co_trich_dan]}
+          - {khoa: chu_tich_ubnd, nhan: Chủ tịch UBND, kieu: van_ban, cach_lay: llm, kiem_tra: [ho_ten, co_trich_dan]}
           - {khoa: don_vi_truc_thuoc, nhan: Số đơn vị trực thuộc, kieu: so, cach_lay: tu_dong, kiem_tra: [so_khong_am]}
           - {khoa: dan_so, nhan: Dân số (người), kieu: so, cach_lay: llm, kiem_tra: [so_duong]}
           - {khoa: so_ho, nhan: Số hộ, kieu: so, cach_lay: llm, kiem_tra: [so_duong]}

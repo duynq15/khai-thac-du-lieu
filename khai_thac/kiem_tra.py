@@ -109,6 +109,14 @@ def kiem(
                     canh_bao.append(f"Toạ độ nằm ngoài bbox tỉnh {tinh}")
                     diem = _diem_tru(diem, 25)
 
+        elif qt == "ho_ten":
+            # Họ tên người: 2–5 từ viết hoa đầu, không chứa chức danh / câu văn
+            g = str(gia_tri).strip()
+            w = g.split()
+            if (not 2 <= len(w) <= 5 or not all(x[:1].isupper() for x in w)
+                    or any(t in g.lower() for t in ("chủ tịch", "ubnd", "phường", "xã ", "thành phố", "ban "))):
+                return "loi", 0, "Không phải họ tên người (chức danh/câu văn)", canh_bao
+
         elif qt == "co_trich_dan":
             if nguon_van_ban and trich_doan:
                 if chuan_hoa(trich_doan) and chuan_hoa(trich_doan) not in chuan_hoa(nguon_van_ban):
