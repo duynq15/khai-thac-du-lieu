@@ -20,6 +20,9 @@ _DIEN_THOAI = re.compile(r"^(?:\+84|0)\d{8,10}$")
 _TIN = re.compile(r"hội nghị|tập huấn|thông báo|đối thoại|chỉ đạo|tuyên truyền|triển khai|trao tặng|"
                   r"niêm yết|tiếp công dân|giao hữu|rộn ràng|đại hội|kỳ họp|tuyên dương|lấy ý kiến|chào cờ",
                   re.IGNORECASE)
+# Chữ cố định của khung cổng TTĐT (chân trang, menu, khẩu hiệu) bóc nhầm thành nội dung
+_KHUNG_CONG = re.compile(r"^(cổng thông tin|văn phòng ủy ban|chịu trách nhiệm|quyết định|nhanh chóng, thuận tiện)",
+                         re.IGNORECASE)
 
 def la_tieu_de_tin(gia_tri, *, xet_chu_hoa: bool = True) -> bool:
     """Giá trị là tiêu đề tin/câu "không có thông tin" bóc nhầm từ trang chủ cổng xã."""
@@ -145,6 +148,13 @@ def kiem(
             elif not trich_doan:
                 canh_bao.append("Thiếu trích dẫn chứng minh")
                 diem = _diem_tru(diem, 40)
+
+        elif qt == "cau_dien_giai":
+            # Trường diễn giải (diên cách, nguồn gốc tên) phải là câu: tên đơn vị trơn, email,
+            # tiêu đề menu hay chữ chân trang cổng xã không phải giá trị
+            g = str(gia_tri).strip()
+            if len(g.split()) < 7 or "@" in g or _KHUNG_CONG.match(g):
+                return "loi", 0, "Không phải câu diễn giải (tên đơn vị/menu/chân trang cổng)", canh_bao
 
         elif qt == "do_dai_toi_da_800":
             if len(str(gia_tri)) > 800:
