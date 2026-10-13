@@ -9,6 +9,8 @@ phạm vi tỉnh mới; tinh_cu giúp chọn tỉnh mới khi tệp gom nhiều 
 from __future__ import annotations
 
 import json
+import re
+import unicodedata
 from datetime import datetime
 from pathlib import Path
 
@@ -30,6 +32,14 @@ TINH_CU_SANG_MOI = {
 }
 
 
+_BO_TIEN_TO = re.compile(r"^(xã|phường|thị trấn|đặc khu)\s+", re.IGNORECASE)
+
+
+def _dau(s: str) -> str:
+    """Chuẩn hoá giữ dấu: NFC, chữ thường, gọn khoảng trắng."""
+    return " ".join(unicodedata.normalize("NFC", str(s or "")).lower().split())
+
+
 def _tinh_moi(tinh_cu: str | None, mac_dinh: str | None) -> str | None:
     t = chuan_hoa(tinh_cu or "").replace("thanh pho ", "").replace("tinh ", "").strip()
     for k, v in TINH_CU_SANG_MOI.items():
@@ -43,6 +53,7 @@ def nap_tep(kho: Kho, p: Path) -> dict:
     kieu = {t["khoa"]: (t.get("kieu", "van_ban"), nh)
             for nh in cau_hinh.ds_nhom("xa") for t in cau_hinh.ds_truong("xa", nh)}
     ban_do: dict[str, dict] = {}
+    dung_dau: dict[str, dict] = {}
     ten_xa: dict[str, str] = {}
     gom: dict[tuple[str, str], dict] = {}   # (mã xã, khoá) → {gia_tri, trich_doan[], url}
     khong_khop: list[str] = []
@@ -54,8 +65,12 @@ def nap_tep(kho: Kho, p: Path) -> dict:
             continue
         if tinh not in ban_do:
             ban_do[tinh] = kho.ban_do_ma(tinh)
-            ten_xa.update({r["ma"]: r["ten"] for r in kho.tim_don_vi(tinh_ma=tinh, cap="xa")})
-        ma = Kho.tim_ma_xa(ban_do[tinh], d["ten_xa"])
+            ds = kho.tim_don_vi(tinh_ma=tinh, cap="xa")
+            ten_xa.update({r["ma"]: r["ten"] for r in ds})
+            # Khớp đúng dấu trước: chuan_hoa bỏ dấu làm trùng "Thanh An"/"Thạnh An", "Cẩm Giang"/"Cẩm Giàng"
+            dung_dau[tinh] = {_dau(t): r["ma"] for r in ds for t in (r["ten"], _BO_TIEN_TO.sub("", r["ten"]))}
+        ma = (dung_dau[tinh].get(_dau(d["ten_xa"])) or dung_dau[tinh].get(_dau(_BO_TIEN_TO.sub("", d["ten_xa"])))
+              or Kho.tim_ma_xa(ban_do[tinh], d["ten_xa"]))
         if not ma:
             khong_khop.append(d["ten_xa"])
             continue
