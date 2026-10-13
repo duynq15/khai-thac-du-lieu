@@ -95,4 +95,27 @@ vb = "x" * 900 + " Đình Cổ Loa thuộc xã Đông Anh. " + "y" * 900 + " xã
 d = _doan_quanh_ten(vb, "Xã Đông Anh", rong=100)
 assert "Cổ Loa" in d and "Thư Lâm" not in d and _doan_quanh_ten(vb, "Xã Mê Linh") == ""
 
+# Nạp tay: tên cũ kèm quận khớp khi cả ngoặc trùng; tên trần trùng nhiều nơi thì bỏ
+import json as _json
+
+from khai_thac.nguon import tay
+
+with tempfile.TemporaryDirectory() as d:
+    kho = Kho(Path(d) / "t.sqlite")
+    kho.ghi_don_vi([DonVi("26506", "Phường Vũng Tàu", "phuong", tinh_ma="79",
+                          don_vi_cu_hop_thanh=["Phường 5 (thành phố Vũng Tàu)", "Phường 1"]),
+                    DonVi("26740", "Phường Sài Gòn", "phuong", tinh_ma="79",
+                          don_vi_cu_hop_thanh=["Phường 5", "Phường 1"])])
+    p = Path(d) / "x.json"
+    p.write_text(_json.dumps({"ma": "t", "ten": "t", "url": "http://x", "muc": "B", "tinh_ma": "79",
+                              "dong": [{"ten_xa": "Phường 5 (thành phố Vũng Tàu)", "truong": {"dan_so": 1},
+                                        "trich_doan": "z"},
+                                       {"ten_xa": "Phường 9 (thành phố Vũng Tàu)", "truong": {"dan_so": 9},
+                                        "trich_doan": "z"}]},
+                             ensure_ascii=False), encoding="utf-8")
+    tay.nap_tep(kho, p)
+    assert [x["gia_tri"] for x in kho.lay_ket_qua(don_vi_ma="26506")] == ["1"]
+    assert not kho.lay_ket_qua(don_vi_ma="26740")
+
 print("OK")
+

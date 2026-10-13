@@ -79,6 +79,9 @@ def nap_tep(kho: Kho, p: Path) -> dict:
                 for ten in json.loads(r[1] or "[]"):
                     k = _dau(_BO_NGOAC.sub(" ", ten))
                     ung.setdefault(k, set()).add(r[0])
+                    ca = _dau(ten)   # nguồn ghi kèm quận ("Phường 5 (thành phố Vũng Tàu)")
+                    if ca != k:
+                        ung.setdefault(ca, set()).add(r[0])
             for k, ma_set in ung.items():
                 if len(ma_set) == 1:
                     dung_dau[tinh].setdefault(k, next(iter(ma_set)))
