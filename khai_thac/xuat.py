@@ -367,3 +367,73 @@ def xuat_excel(ds: list[KetQua], duong_dan: Path | str | None = None, goi: dict 
     duong_dan.parent.mkdir(parents=True, exist_ok=True)
     wb.save(duong_dan)
     return duong_dan
+
+
+# ----------------------------------------------------------------------------- Kiểm khớp
+def _la(v) -> list:
+    """Mọi giá trị lá (bỏ rỗng/bool) của một giá trị JSON lồng nhau."""
+    if isinstance(v, dict):
+        return [x for vv in v.values() for x in _la(vv)]
+    if isinstance(v, list):
+        return [x for vv in v for x in _la(vv)]
+    return [] if v in (None, "") or isinstance(v, bool) else [v]
+
+
+def _chuan(s) -> str:
+    return re.sub(r"[^0-9a-zà-ỹđ]", "", str(s).lower())
+
+
+def _o_chua(x, o) -> bool:
+    """Ô Excel `o` có thể hiện giá trị lá `x` của JSON không."""
+    if isinstance(x, (int, float)):
+        so = [float(m.replace(".", "").replace(",", ".")) if "," in m else float(m)
+              for m in re.findall(r"-?\d[\d.,]*\d|\d", str(o))]
+        if isinstance(o, (int, float)):
+            so.append(float(o))
+        return any(abs(m - x) < 1e-9 for m in so) or _chuan(x) in _chuan(o)
+    if re.match(r"^\d{4}-\d{2}-\d{2}$", str(x)):
+        return "/".join(reversed(x.split("-"))) in str(o)
+    return _chuan({"toan_bo": "toàn bộ", "mot_phan": "một phần"}.get(x, x)) in _chuan(o)
+
+
+def kiem_xuat(tep_json: Path | None = None, tep_xlsx: Path | None = None) -> tuple[dict, dict]:
+    """So từng ô: mọi giá trị JSON (cả lá lồng nhau) và nguồn của nó phải có ở sheet tỉnh và
+    sheet "Nguồn & bằng chứng". Mặc định lấy cặp tệp mới nhất. Trả (đếm, ví dụ lệch)."""
+    import collections
+    from openpyxl import load_workbook
+
+    tep_json = tep_json or sorted(GOC_BAN_GIAO.glob("ban_giao_*.json"))[-1]
+    tep_xlsx = tep_xlsx or sorted(GOC_BAN_GIAO.glob("ban_giao_*.xlsx"))[-1]
+    d = json.loads(Path(tep_json).read_text(encoding="utf-8"))
+    wb = load_workbook(tep_xlsx, read_only=True)
+    nhan = {t["khoa"]: t["nhan"] for t in d["schema"]["xa"]}
+    nguon = {(r[1], r[3]): r for r in list(wb["Nguồn & bằng chứng"].iter_rows(values_only=True))[1:]}
+    rong: dict = {}
+    for ws in wb.worksheets[2:-1]:
+        dong = list(ws.iter_rows(values_only=True))
+        for r in dong[2:]:
+            rong.update({(r[0], h): v for h, v in zip(dong[1], r)})
+    dem, vd = collections.Counter(), collections.defaultdict(list)
+    for u in d["don_vi"]:
+        for k, t in u["truong"].items():
+            khoa = (u["ma"], nhan.get(k, k))
+            s = nguon.get(khoa)
+            if t["gia_tri"] is None:
+                dem["json rỗng, excel có"] += bool(s) or rong.get(khoa) not in (None, "")
+                continue
+            dem["ô"] += 1
+            if not s:
+                dem["thiếu dòng nguồn"] += 1
+                continue
+            ng = t.get("nguon") or {}
+            la = _la(t["gia_tri"])
+            for ten, ok in (("bảng rộng", all(_o_chua(x, rong.get(khoa)) for x in la)),
+                            ("giá trị nguồn", all(_o_chua(x, s[4]) for x in la)),
+                            ("trạng thái", bool(s[5])), ("tên nguồn", ng.get("ten") == s[8]),
+                            ("url", ng.get("url") == s[9]),
+                            ("trích đoạn", (t.get("trich_doan") or None) == (s[10] or None))):
+                if not ok:
+                    dem[ten] += 1
+                    vd[ten].append((khoa, str(t["gia_tri"])[:60], str(s[4])[:60]))
+    wb.close()
+    return dict(dem), dict(vd)

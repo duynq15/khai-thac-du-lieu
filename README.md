@@ -171,6 +171,9 @@ ollama serve
 lệnh artisan (xem kế hoạch, mục 5) để ghi vào `khai_thac_ket_qua`, rồi cán bộ
 duyệt trên web-admin trước khi vào bảng nghiệp vụ.
 
+Sau mỗi lần `khai-thac xuat`, chạy `khai-thac kiem-xuat` để so từng ô JSON ↔ Excel
+(mã thoát 1 nếu lệch). Script một lần đã dùng để ghi dữ liệu: xem `scripts/README.md`.
+
 ## Danh mục tới đâu?
 
 | Cấp | Nguồn | Ghi chú |

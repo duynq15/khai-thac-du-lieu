@@ -155,6 +155,17 @@ def cmd_xuat(args) -> int:
     return 0
 
 
+def cmd_kiem_xuat(args) -> int:
+    """So khớp JSON và Excel bàn giao mới nhất; mã thoát 1 nếu lệch."""
+    from .xuat import kiem_xuat
+
+    dem, vd = kiem_xuat()
+    print(dem)
+    for ten, ds in vd.items():
+        print(ten, len(ds), ds[:3])
+    return 1 if vd or dem.get("thiếu dòng nguồn") or dem.get("json rỗng, excel có") else 0
+
+
 def cmd_thon(args) -> int:
     kho = _kho(args)
     if not args.ten and not args.ma and not args.tinh:
@@ -428,6 +439,9 @@ def tao_parser() -> argparse.ArgumentParser:
     o.add_argument("--nhom", help="Lọc theo nhóm")
     o.add_argument("--trang-thai", dest="trang_thai", help="Lọc theo trạng thái")
     o.set_defaults(fn=cmd_xuat)
+
+    kx = sub.add_parser("kiem-xuat", help="So khớp từng ô JSON ↔ Excel bàn giao mới nhất")
+    kx.set_defaults(fn=cmd_kiem_xuat)
 
     t = sub.add_parser("trang-thai", help="Kiểm tra LLM/Ollama")
     t.set_defaults(fn=cmd_trang_thai)

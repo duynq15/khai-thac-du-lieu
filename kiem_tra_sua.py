@@ -129,3 +129,10 @@ assert not la_tieu_de_tin(["LÀNG NGHỀ BÁNH CHƯNG TRUYỀN THỐNG ĐINH XÁ
 assert not la_tieu_de_tin([{"ten": "Lễ hội vinh danh làng nghề"}]) and not la_tieu_de_tin("Nguyễn Văn An")
 assert kiem({"kiem_tra": []}, "THÔNG BÁO NIÊM YẾT DANH SÁCH")[0] == "loi"
 print("OK tiêu đề tin")
+
+# kiem-xuat: ô Excel phải thể hiện mọi lá của giá trị JSON
+from khai_thac.xuat import _la, _o_chua
+assert _la({"a": [1, {"b": "x"}], "c": None, "d": True}) == [1, "x"]
+assert _o_chua(1234.5, "1.234,5 người") and _o_chua(12, 12) and not _o_chua(13, "12")
+assert _o_chua("2025-07-01", "01/07/2025") and _o_chua("toan_bo", "Toàn bộ") and not _o_chua("abc", "xyz")
+print("OK kiem-xuat")
