@@ -69,7 +69,7 @@ for k in 0 1 2 3; do
   uv run khai-thac tinh --ma 01 --shard $k/4 > logs/hn-$k.log 2>&1 &
 done; wait
 
-# Qua đêm nhiều tỉnh: nguồn cấu trúc → cào → LLM → thôn → xuất (tự chạy tiếp khi treo)
+# Qua đêm nhiều tỉnh: nguồn cấu trúc → cào → thôn → xuất (không LLM) (tự chạy tiếp khi treo)
 setsid nohup ./dieu-phoi.sh "31 01 48 79 92 46" 6 > logs/dieu-phoi.run 2>&1 < /dev/null &
 ./giam-sat.sh "31 01 48 79 92 46"     # tuỳ chọn: tự khởi động lại dieu-phoi nếu chết
 ```
@@ -162,7 +162,9 @@ Phần LLM dùng Ollama; thiếu Ollama thì pipeline vẫn chạy bằng quy t�
 
 LLM không nằm trên đường cào. `xa`/`tinh` mặc định chỉ cào + quy tắc và lưu trang vào
 `du_lieu/cache_trang/`. Thêm `--dung-llm` để chạy pha LLM ngoại tuyến: không gọi mạng,
-không mở trình duyệt, chỉ đọc trang đã cache ở pha cào (`dieu-phoi.sh` pha B làm vậy).
+không mở trình duyệt, chỉ đọc trang đã cache ở pha cào. `dieu-phoi.sh` không chạy pha này nữa:
+đo 10/2026 trên 10 phường Huế (đếm theo `boc_boi='llm'`), 15/15 ô LLM "đạt" đều sai
+(tiêu đề tin làm lễ hội/di tích, số hộ lấy từ thông báo).
 `nap-llm` cũng chạy ngoại tuyến.
 
 ```bash

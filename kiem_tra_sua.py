@@ -35,7 +35,7 @@ assert not trinh_duyet.san_sang()
 assert MA_THOAT_KHOI_DONG_LAI == 75
 for sh in ("dieu-phoi.sh",):
     s = open(sh, encoding="utf-8").read()
-    assert '"$rc" -ne 75' in s and "--dung-llm" in s, sh
+    assert '"$rc" -ne 75' in s and "--dung-llm" not in s, sh  # pha LLM đã bỏ khỏi chạy qua đêm
 
 # --- refactor nguồn theo tỉnh ---
 import tempfile

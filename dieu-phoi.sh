@@ -2,7 +2,7 @@
 # ĐIỀU PHỐI QUA ĐÊM cho nhiều tỉnh — tự phục hồi, ưu tiên theo danh sách.
 #   ./dieu-phoi.sh [danh-sach] [so-luong]
 # Mặc định: ưu tiên Hải Phòng, Hà Nội, rồi Đà Nẵng, HCM, Cần Thơ, Huế.
-# Mỗi lệnh có timeout (tự cắt khi treo) và chạy 2 lượt pha LLM (nhặt xã bị treo).
+# Mỗi lệnh có timeout (tự cắt khi treo) và tự chạy lại khi thoát mã 75.
 # Chạy lại được: resume tiếp đúng chỗ.
 set -u
 cd "$(dirname "$0")" || exit 1
@@ -17,7 +17,6 @@ chay_lai() { while :; do "$@"; rc=$?; [ "$rc" -ne 75 ] && return "$rc"; done; }
 DS="${1:-31 01 48 79 92 46}"
 N="${2:-6}"
 NCAO="thong_tin_chung,sap_xep_2025,hanh_chinh_dan_cu"
-NLLM="hanh_chinh_dan_cu,lich_su_dia_danh,di_tich,le_hoi,kinh_te_van_hoa,con_nguoi"
 DIEU_PHOI_LOG="logs/dieu-phoi.out"
 BAO_CAO="logs/BAO-CAO-SANG.txt"
 
@@ -40,15 +39,9 @@ for T in $DS; do
   done
   wait
 
-  # ---- PHA B: LLM (2 lượt để nhặt xã bị treo) ----
-  log "### $T · PHA B (LLM) lượt 1"
-  chay_lai timeout 9000 uv run khai-thac tinh --ma "$T" --shard 0/1 --dung-llm \
-    --nhom "$NLLM" >> "logs/t$T-ollama.log" 2>&1
-  log "### $T · PHA B (LLM) lượt 2 — nhặt xã treo/bỏ sót"
-  chay_lai timeout 5400 uv run khai-thac tinh --ma "$T" --shard 0/1 --dung-llm \
-    --nhom "$NLLM" >> "logs/t$T-ollama.log" 2>&1
-
-  log "  ✓ xong A+B tỉnh $T — $(uv run khai-thac thong-ke --tinh-ma "$T" 2>/dev/null | sed -n '2p')"
+  # Không còn pha LLM: đo 10/2026 trên 10 phường Huế, 15/15 ô LLM "đạt" đều sai
+  # (tiêu đề tin thành lễ hội, số hộ lấy từ thông báo). Muốn thử lại: chạy tay pha LLM (README).
+  log "  ✓ xong 0+A tỉnh $T — $(uv run khai-thac thong-ke --tinh-ma "$T" 2>/dev/null | sed -n '2p')"
 done
 
 # ---- PHA C: Thôn (OCOP/adapter đã chạy ở PHA 0 qua config/nguon) ----
