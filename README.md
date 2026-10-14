@@ -180,6 +180,9 @@ Sau mỗi lần `khai-thac xuat`, chạy `khai-thac kiem-xuat` để so từng �
 (mã thoát 1 nếu lệch). Script một lần đã dùng để ghi dữ liệu: xem `scripts/README.md`.
 Sao lưu DB (`du_lieu/sao_luu`) dọn bằng `khai-thac don-sao-luu` (giữ 10 bản mới nhất + 1 bản/ngày;
 chỉ liệt kê, thêm `--xoa` mới xoá).
+Duyệt dòng `cho_duyet` (việc của người, không phải agent): `khai-thac duyet [--tinh-ma 46] [--truong dan_so]`
+liệt kê giá trị + nguồn + trích dẫn; `khai-thac duyet --chot ID… --bo ID… --nguoi "Tên"` đổi sang
+`dat`/`bo`, sao lưu DB trước và ghi "Duyệt bởi …" vào `canh_bao`. Sau đó chạy lại `xuat` + `kiem-xuat`.
 
 ## Danh mục tới đâu?
 

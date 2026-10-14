@@ -197,6 +197,61 @@ def cmd_don_sao_luu(args) -> int:
     return 0
 
 
+def cmd_duyet(args) -> int:
+    """Người duyệt xem dòng cho_duyet; --chot/--bo đổi trạng thái (sao lưu DB trước, không xoá dòng).
+
+    ponytail: duyệt bằng CLI theo id; màn duyệt web-admin (Laravel) thay thế khi có.
+    """
+    import json
+    import sqlite3
+    from datetime import datetime
+
+    kho = _kho(args)
+    c = kho.conn
+    if not (args.chot or args.bo):
+        loc, p = "", []
+        if args.tinh_ma:
+            loc += " AND don_vi_ma IN (SELECT ma FROM don_vi WHERE tinh_ma = ?)"; p.append(args.tinh_ma)
+        if args.truong:
+            loc += " AND truong = ?"; p.append(args.truong)
+        for r in c.execute(f"SELECT id, don_vi_ma, don_vi_ten, truong, gia_tri, nguon_url, trich_doan, ly_do_loi"
+                           f" FROM ket_qua WHERE trang_thai = 'cho_duyet'{loc} ORDER BY don_vi_ma, truong"
+                           f" LIMIT ?", (*p, args.gioi_han)):
+            print(f"#{r['id']} {r['don_vi_ma']} {r['don_vi_ten']} · {r['truong']} = {str(r['gia_tri'])[:120]}\n"
+                  f"   nguồn: {r['nguon_url']}\n   trích: {str(r['trich_doan'])[:200]}"
+                  + (f"\n   lý do chờ: {r['ly_do_loi']}" if r["ly_do_loi"] else ""))
+        print(c.execute(f"SELECT COUNT(*) FROM ket_qua WHERE trang_thai = 'cho_duyet'{loc}", p).fetchone()[0],
+              "dòng chờ duyệt")
+        return 0
+    if not args.nguoi:
+        raise SystemExit("--nguoi bắt buộc khi --chot/--bo (ghi ai duyệt)")
+    viec = []
+    for ids, moi in ((args.chot or [], "dat"), (args.bo or [], "bo")):
+        for i in ids:
+            r = c.execute("SELECT canh_bao FROM ket_qua WHERE id = ? AND trang_thai = 'cho_duyet'", (i,)).fetchone()
+            if r is None:
+                print(f"bỏ qua #{i}: không ở trạng thái cho_duyet")
+            else:
+                viec.append((i, moi, r["canh_bao"]))
+    if not viec:
+        print("không có dòng nào để đổi")
+        return 1
+    ts = datetime.now()
+    sao = kho.duong_dan.parent / "sao_luu" / f"khai_thac_{ts:%Y%m%d_%H%M%S_%f}_truoc_duyet.sqlite"
+    sao.parent.mkdir(exist_ok=True)
+    with sqlite3.connect(sao) as dich:  # backup API: gồm cả phần còn trong WAL
+        c.backup(dich)
+    ghi = f"Duyệt bởi {args.nguoi} lúc {ts:%Y-%m-%d %H:%M}"
+    for i, moi, cb in viec:
+        cb = json.loads(cb or "[]") + [f"{ghi}: {'chốt' if moi == 'dat' else 'loại'}"]
+        c.execute("UPDATE ket_qua SET trang_thai = ?, canh_bao = ? WHERE id = ?",
+                  (moi, json.dumps(cb, ensure_ascii=False), i))
+    c.commit()
+    n = len(viec)
+    print(f"đã đổi {n} dòng; sao lưu: {sao}")
+    return 0
+
+
 def cmd_thon(args) -> int:
     kho = _kho(args)
     if not args.ten and not args.ma and not args.tinh:
@@ -481,6 +536,15 @@ def tao_parser() -> argparse.ArgumentParser:
     ds.add_argument("--giu", type=int, default=10, help="Số bản mới nhất luôn giữ")
     ds.add_argument("--xoa", action="store_true", help="Xoá thật (không có cờ này chỉ in)")
     ds.set_defaults(fn=cmd_don_sao_luu)
+
+    dy = sub.add_parser("duyet", help="Xem/chốt dòng chờ duyệt (người duyệt, không phải agent)")
+    dy.add_argument("--tinh-ma", dest="tinh_ma")
+    dy.add_argument("--truong")
+    dy.add_argument("--gioi-han", dest="gioi_han", type=int, default=30)
+    dy.add_argument("--chot", type=int, nargs="+", help="id chuyển sang đạt")
+    dy.add_argument("--bo", type=int, nargs="+", help="id loại (trang_thai='bo')")
+    dy.add_argument("--nguoi", help="Tên người duyệt (bắt buộc khi --chot/--bo)")
+    dy.set_defaults(fn=cmd_duyet)
 
     t = sub.add_parser("trang-thai", help="Kiểm tra LLM/Ollama")
     t.set_defaults(fn=cmd_trang_thai)

@@ -178,3 +178,26 @@ with tempfile.TemporaryDirectory() as d:
     assert [r[0] for r in kho.conn.execute("SELECT truong FROM ket_qua WHERE boc_boi='llm'").fetchall()] == ["le_hoi_cua_xa"]
 print("OK boc_boi")
 
+# Lệnh duyet: bắt buộc tên người duyệt, sao lưu trước khi đổi, ghi vết vào canh_bao, không xoá dòng
+import argparse as _ap
+from khai_thac.cli import cmd_duyet as _duyet
+with tempfile.TemporaryDirectory() as d:
+    db = Path(d) / "t.sqlite"
+    kho = Kho(db)
+    kho.ghi_ket_qua([_KQ("1", "x", "xa", "le_hoi", "le_hoi_cua_xa", "a", trang_thai="cho_duyet"),
+                     _KQ("1", "x", "xa", "le_hoi", "lang_nghe", "b", trang_thai="cho_duyet")], "l")
+    a, b = [r[0] for r in kho.conn.execute("SELECT id FROM ket_qua ORDER BY id")]
+    def ns(**k):
+        return _ap.Namespace(**{**dict(db=str(db), tinh_ma=None, truong=None, gioi_han=5,
+                                       chot=None, bo=None, nguoi=None), **k})
+    try:
+        _duyet(ns(chot=[a])); raise AssertionError("thiếu --nguoi phải dừng")
+    except SystemExit:
+        pass
+    assert _duyet(ns(chot=[a], bo=[b], nguoi="T")) == 0
+    assert _duyet(ns(chot=[a], nguoi="T")) == 1  # không còn chờ duyệt thì không đổi, không sao lưu
+    k2 = Kho(db)
+    assert [tuple(r) for r in k2.conn.execute("SELECT trang_thai FROM ket_qua ORDER BY id")] == [("dat",), ("bo",)]
+    assert "Duyệt bởi T" in k2.conn.execute("SELECT canh_bao FROM ket_qua WHERE id=?", (a,)).fetchone()[0]
+    assert len(list((Path(d) / "sao_luu").glob("*_truoc_duyet.sqlite"))) == 1
+print("OK duyet")
