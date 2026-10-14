@@ -101,10 +101,12 @@ def _chia(shard: str | None) -> tuple[int, int] | None:
 def _chay(args, *, tinh_ma: str | None, nhom: list[str] | None) -> int:
     """Chung cho `xa` và `tinh`: một vòng khai thác (quy_trinh.chay_tinh) + xuất."""
     kho = _kho(args)
-    if getattr(args, "khong_trinh_duyet", False):
+    if getattr(args, "khong_trinh_duyet", False) or args.dung_llm:
         from .nguon import trinh_duyet
 
         trinh_duyet.tat()
+    if args.dung_llm:  # LLM chỉ chạy trên trang đã cache ở pha cào, không gọi mạng
+        http_mod.dat_ngoai_tuyen()
     from . import quy_trinh
 
     quy_trinh.CHE_DO_LLM = ("xuat" if getattr(args, "xuat_nguon", False)
@@ -308,6 +310,7 @@ def cmd_nap_llm(args) -> int:
     from .nguon import trinh_duyet
 
     trinh_duyet.tat()
+    http_mod.dat_ngoai_tuyen()
     quy_trinh.CHE_DO_LLM = "tep"
     kho = _kho(args)
     da = set() if args.lam_lai else kho.da_xu_ly_ds(",".join(sorted(NHOM_LLM)))
@@ -454,8 +457,9 @@ def tao_parser() -> argparse.ArgumentParser:
     x.add_argument("--lam-lai", action="store_true", help="Bỏ qua trạng thái đã đạt, làm lại từ đầu")
     x.add_argument("--khong-trinh-duyet", action="store_true", help="Không mở Chrome (chỉ cache + HTTP tĩnh)")
     x.add_argument("--shard", help="Chia việc cho nhiều tiến trình, dạng K/N (vd 1/6)")
-    x.add_argument("--dung-llm", dest="dung_llm", action="store_true", default=True)
-    x.add_argument("--khong-llm", dest="dung_llm", action="store_false")
+    x.add_argument("--dung-llm", dest="dung_llm", action="store_true", default=False,
+                   help="Pha LLM: chỉ đọc cache trang (ngoại tuyến), không cào")
+    x.add_argument("--khong-llm", dest="dung_llm", action="store_false", help="(mặc định) pha cào, không LLM")
     x.add_argument("--xuat", nargs="*", default=None, help="json excel")
     x.add_argument("--dung-proxy", dest="dung_proxy", action="store_true",
                    help="Xoay proxy từ du_lieu/proxy.txt")
@@ -487,8 +491,9 @@ def tao_parser() -> argparse.ArgumentParser:
     ti.add_argument("--shard", help="Chia việc cho nhiều tiến trình, dạng K/N")
     ti.add_argument("--gioi-han", type=int, default=None, help="Chỉ chạy N xã đầu (chạy thử)")
     ti.add_argument("--lam-lai", action="store_true", help="Không bỏ qua đơn vị đã đạt")
-    ti.add_argument("--dung-llm", dest="dung_llm", action="store_true", default=True)
-    ti.add_argument("--khong-llm", dest="dung_llm", action="store_false")
+    ti.add_argument("--dung-llm", dest="dung_llm", action="store_true", default=False,
+                    help="Pha LLM: chỉ đọc cache trang (ngoại tuyến), không cào")
+    ti.add_argument("--khong-llm", dest="dung_llm", action="store_false", help="(mặc định) pha cào, không LLM")
     ti.add_argument("--xuat-nguon", action="store_true",
                     help="Không gọi Ollama: ghi đề bài LLM từng xã vào du_lieu/llm_vao/ (cho Claude/agent)")
     ti.add_argument("--llm-tu-tep", action="store_true",

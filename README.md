@@ -160,6 +160,11 @@ Hạn mức free ~2.000 truy vấn/tháng; xã đã cache tên miền gov thì k
 
 Phần LLM dùng Ollama; thiếu Ollama thì pipeline vẫn chạy bằng quy tắc.
 
+LLM không nằm trên đường cào. `xa`/`tinh` mặc định chỉ cào + quy tắc và lưu trang vào
+`du_lieu/cache_trang/`. Thêm `--dung-llm` để chạy pha LLM ngoại tuyến: không gọi mạng,
+không mở trình duyệt, chỉ đọc trang đã cache ở pha cào (`dieu-phoi.sh` pha B làm vậy).
+`nap-llm` cũng chạy ngoại tuyến.
+
 ```bash
 ollama pull qwen2.5:7b-instruct
 ollama serve

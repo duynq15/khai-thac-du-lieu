@@ -2,12 +2,26 @@
 
 from __future__ import annotations
 
+import json
+
+from .. import cache
 from ..http import json_goi
 
 API = "https://vi.wikipedia.org/w/api.php"
 
 
 def _bai(tua_de: str) -> dict | None:
+    """Bài theo tựa; lưu cache (khoá theo tựa) để pha LLM ngoại tuyến đọc lại được."""
+    khoa = f"{API}?titles={tua_de}"
+    co = cache.lay(khoa)
+    if co is not None:
+        return json.loads(co)
+    bai = _tai_bai(tua_de)
+    if bai:
+        cache.luu(khoa, json.dumps(bai, ensure_ascii=False))
+    return bai
+
+def _tai_bai(tua_de: str) -> dict | None:
     du = json_goi(
         API,
         params={

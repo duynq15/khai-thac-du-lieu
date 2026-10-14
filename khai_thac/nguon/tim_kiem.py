@@ -10,7 +10,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 from bs4 import BeautifulSoup
 
-from ..http import goi, html_goi
+from ..http import goi, html_goi, ngoai_tuyen
 
 DDG = "https://lite.duckduckgo.com/lite/"
 BING = "https://www.bing.com/search"
@@ -176,8 +176,10 @@ def tim(cau_hoi: str, *, so_luong: int = 10) -> list[dict]:
     """Tìm kiếm: dùng Brave API nếu có khoá, không thì scrape (DDG/Bing).
 
     Nếu TẤT CẢ nguồn scrape đều không phản hồi thì NÉM NguonBiChan. Có phản hồi
-    nhưng không kết quả thì trả [].
+    nhưng không kết quả thì trả []. Ngoại tuyến (pha LLM) trả [] ngay.
     """
+    if ngoai_tuyen():
+        return []
     # 1) Brave Search API (ổn định, không bị chặn)
     kq = _tim_brave(cau_hoi, so_luong)
     if kq is not None:

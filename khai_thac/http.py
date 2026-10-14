@@ -145,6 +145,16 @@ def dang_dung_proxy() -> bool:
     return _dung_proxy and _pool is not None and len(_pool) > 0
 
 
+# --- Ngoại tuyến: pha LLM chỉ đọc cache, không gọi mạng ---
+_ngoai_tuyen = False
+
+def dat_ngoai_tuyen(bat: bool = True) -> None:
+    global _ngoai_tuyen
+    _ngoai_tuyen = bat
+
+def ngoai_tuyen() -> bool:
+    return _ngoai_tuyen
+
 # --- Tự động chuyển sang proxy khi bị chặn ---
 _tu_dong_proxy = False
 _dang_chuan_bi = False
@@ -193,7 +203,9 @@ def goi(
     headers: dict | None = None,
     timeout: float | None = None,
 ) -> httpx.Response | None:
-    """GET có thử lại, xoay UA/proxy, lùi dần khi bị chặn. Trả None nếu hỏng hẳn."""
+    """GET có thử lại, xoay UA/proxy, lùi dần khi bị chặn. Trả None nếu hỏng hẳn (hoặc ngoại tuyến)."""
+    if _ngoai_tuyen:
+        return None
     host = urlparse(url).netloc
     for lan in range(thu_lai):
         _cho(host)

@@ -42,10 +42,10 @@ for T in $DS; do
 
   # ---- PHA B: LLM (2 lượt để nhặt xã bị treo) ----
   log "### $T · PHA B (LLM) lượt 1"
-  chay_lai timeout 9000 uv run khai-thac tinh --ma "$T" --shard 0/1 --khong-trinh-duyet \
+  chay_lai timeout 9000 uv run khai-thac tinh --ma "$T" --shard 0/1 --dung-llm \
     --nhom "$NLLM" >> "logs/t$T-ollama.log" 2>&1
   log "### $T · PHA B (LLM) lượt 2 — nhặt xã treo/bỏ sót"
-  chay_lai timeout 5400 uv run khai-thac tinh --ma "$T" --shard 0/1 --khong-trinh-duyet \
+  chay_lai timeout 5400 uv run khai-thac tinh --ma "$T" --shard 0/1 --dung-llm \
     --nhom "$NLLM" >> "logs/t$T-ollama.log" 2>&1
 
   log "  ✓ xong A+B tỉnh $T — $(uv run khai-thac thong-ke --tinh-ma "$T" 2>/dev/null | sed -n '2p')"

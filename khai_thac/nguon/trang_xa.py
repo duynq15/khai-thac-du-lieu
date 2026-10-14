@@ -73,6 +73,10 @@ def mien_gov(don_vi: dict, *, mac_dinh: str | None = None) -> str | None:
     cache = _doc_cache()
     if ma in cache:
         return cache[ma]  # None = đã dò, không có cổng → khỏi dò lại
+    from ..http import ngoai_tuyen
+
+    if ngoai_tuyen():
+        return None  # chưa dò thì để pha cào dò; không ghi None giả vào cache
 
     for doan in _doan_theo_mau(don_vi):
         if _thu_mien(doan):

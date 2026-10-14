@@ -35,7 +35,7 @@ assert not trinh_duyet.san_sang()
 assert MA_THOAT_KHOI_DONG_LAI == 75
 for sh in ("dieu-phoi.sh",):
     s = open(sh, encoding="utf-8").read()
-    assert '"$rc" -ne 75' in s and "--khong-trinh-duyet" in s, sh
+    assert '"$rc" -ne 75' in s and "--dung-llm" in s, sh
 
 # --- refactor nguồn theo tỉnh ---
 import tempfile
@@ -156,3 +156,15 @@ _g = gop_theo_xa([("1", {"T": "Thôn A", "H": "120"}), ("1", {"T": "Thôn B", "H
 assert [(m, t, v) for m, t, v, _ in _g] == [("1", "don_vi_truc_thuoc", 2), ("1", "so_ho", 1170), ("2", "don_vi_truc_thuoc", 1)], _g
 assert _g[0][3] == "2 dòng: Thôn A; Thôn B"
 print("OK gop thon")
+
+# Ngoại tuyến: không gọi mạng, không tìm kiếm, không ghi None giả vào cache cổng xã
+import importlib
+from khai_thac import http as _http
+importlib.reload(_http)  # bỏ goi giả ở test bang phía trên
+from khai_thac.nguon import tim_kiem as _tk
+from khai_thac.nguon.trang_xa import mien_gov as _mg
+_http.dat_ngoai_tuyen(True)
+assert _http.goi("https://example.com") is None and _tk.tim("x") == []
+assert _mg({"ma": "zz_khong_co", "ten": "Xã Thử", "tinh_ma": "46"}) is None
+_http.dat_ngoai_tuyen(False)
+print("OK ngoai tuyen")
