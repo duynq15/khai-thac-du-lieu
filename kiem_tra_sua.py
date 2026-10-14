@@ -168,3 +168,13 @@ assert _http.goi("https://example.com") is None and _tk.tim("x") == []
 assert _mg({"ma": "zz_khong_co", "ten": "Xã Thử", "tinh_ma": "46"}) is None
 _http.dat_ngoai_tuyen(False)
 print("OK ngoai tuyen")
+
+# Dòng LLM bóc được đánh dấu boc_boi="llm" để đo đóng góp pha LLM
+from khai_thac.models import KetQua as _KQ
+with tempfile.TemporaryDirectory() as d:
+    kho = Kho(Path(d) / "t.sqlite")
+    kho.ghi_ket_qua([_KQ("1", "x", "xa", "le_hoi", "le_hoi_cua_xa", "a", boc_boi="llm"),
+                     _KQ("1", "x", "xa", "le_hoi", "lang_nghe", "b")], "l")
+    assert [r[0] for r in kho.conn.execute("SELECT truong FROM ket_qua WHERE boc_boi='llm'").fetchall()] == ["le_hoi_cua_xa"]
+print("OK boc_boi")
+

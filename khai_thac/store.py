@@ -98,6 +98,8 @@ class Kho:
             self.conn.execute("ALTER TABLE don_vi ADD COLUMN parent_ma TEXT")
         if "nam_du_lieu" not in {r[1] for r in self.conn.execute("PRAGMA table_info(ket_qua)")}:
             self.conn.execute("ALTER TABLE ket_qua ADD COLUMN nam_du_lieu INTEGER")
+        if "boc_boi" not in {r[1] for r in self.conn.execute("PRAGMA table_info(ket_qua)")}:
+            self.conn.execute("ALTER TABLE ket_qua ADD COLUMN boc_boi TEXT")
         self.conn.commit()
 
     # ---------------------------------------------------------------- danh mục
@@ -280,14 +282,14 @@ class Kho:
                 luot_ma, k.don_vi_ma, k.don_vi_ten, k.cap, k.nhom, k.truong, gia_tri, k.kieu,
                 k.nguon_ma, k.nguon_ten, k.nguon_url, k.nguon_muc, k.trich_doan,
                 k.diem_tin, k.trang_thai, k.ly_do_loi,
-                json.dumps(k.canh_bao, ensure_ascii=False), k.nam_du_lieu,
+                json.dumps(k.canh_bao, ensure_ascii=False), k.nam_du_lieu, k.boc_boi,
             ))
         self.conn.executemany(
             """INSERT OR REPLACE INTO ket_qua
                (luot_ma, don_vi_ma, don_vi_ten, cap, nhom, truong, gia_tri, kieu,
                 nguon_ma, nguon_ten, nguon_url, nguon_muc, trich_doan, diem_tin,
-                trang_thai, ly_do_loi, canh_bao, nam_du_lieu)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                trang_thai, ly_do_loi, canh_bao, nam_du_lieu, boc_boi)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             dong,
         )
         self.conn.commit()

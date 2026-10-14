@@ -76,6 +76,7 @@ class KetQua:
     ly_do_loi: str | None = None
     canh_bao: list[str] = field(default_factory=list)
     nam_du_lieu: int | None = None        # năm của số liệu (màn duyệt mâu thuẫn)
+    boc_boi: str | None = None            # "llm" nếu giá trị do LLM bóc (đo đóng góp pha LLM)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

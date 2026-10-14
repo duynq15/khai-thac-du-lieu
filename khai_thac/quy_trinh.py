@@ -474,9 +474,10 @@ def khai_thac_don_vi(don_vi: sqlite3.Row | dict, nhom: str, *, cap: str = "xa",
     # Nếu đã bóc sẵn từ trước (gộp nhiều nhóm) thì chỉ lấy phần của nhóm này.
     if llm_da_boc is not None:
         khoa_nhom = {t["khoa"] for t in truong_ds}
-        giai.update({k: v for k, v in llm_da_boc.items() if k in khoa_nhom})
+        tu_llm = {k: v for k, v in llm_da_boc.items() if k in khoa_nhom}
     else:
-        giai.update(_boc_llm_hang_loat(cho_llm, nguons, dung_llm))
+        tu_llm = _boc_llm_hang_loat(cho_llm, nguons, dung_llm)
+    giai.update(tu_llm)
 
     # Bước 3: dựng kết quả theo đúng thứ tự trường
     kq: list[KetQua] = []
@@ -523,6 +524,7 @@ def khai_thac_don_vi(don_vi: sqlite3.Row | dict, nhom: str, *, cap: str = "xa",
             nguon_muc=(nguon or {}).get("muc") or ("A" if tu_danh_muc is not None else None),
             trich_doan=trich, diem_tin=diem, trang_thai=trang_thai if trang_thai in (DAT, LOI) else THIEU,
             ly_do_loi=ly_do, canh_bao=canh_bao, nam_du_lieu=(nguon or {}).get("nam"),
+            boc_boi="llm" if khoa in tu_llm and gia_tri is not None else None,
         ))
     return kq
 
