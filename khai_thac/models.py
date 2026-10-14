@@ -14,6 +14,12 @@ DA_DUYET = "da_duyet"
 TU_CHOI = "tu_choi"
 
 
+def diem_theo_muc(muc: str | None, canh_bao: list | None = None) -> int:
+    """Độ tin suy từ hạng nguồn (A 90, B 75, khác 60); có cảnh báo (giá trị chung toàn TP,
+    câu ghép từ trường khác…) trừ 10. Nguồn nạp tay/bảng dùng chung, không đặt điểm tuỳ ý."""
+    return {"A": 90, "B": 75}.get(muc, 60) - (10 if canh_bao else 0)
+
+
 @dataclass
 class DonVi:
     """Một đơn vị hành chính trong danh mục."""

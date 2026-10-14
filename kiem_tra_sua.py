@@ -136,3 +136,8 @@ assert _la({"a": [1, {"b": "x"}], "c": None, "d": True}) == [1, "x"]
 assert _o_chua(1234.5, "1.234,5 người") and _o_chua(12, 12) and not _o_chua(13, "12")
 assert _o_chua("2025-07-01", "01/07/2025") and _o_chua("toan_bo", "Toàn bộ") and not _o_chua("abc", "xyz")
 print("OK kiem-xuat")
+
+from khai_thac.models import diem_theo_muc
+assert (diem_theo_muc("A"), diem_theo_muc("B"), diem_theo_muc("C"), diem_theo_muc(None)) == (90, 75, 60, 60)
+assert diem_theo_muc("B", ["chung toàn TP"]) == 65 and diem_theo_muc("A", []) == 90
+print("OK diem_theo_muc")

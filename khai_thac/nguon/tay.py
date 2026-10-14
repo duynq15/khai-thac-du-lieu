@@ -1,7 +1,10 @@
 """Nạp danh sách đã tách sẵn (người/agent tách từ trang chính thống) — du_lieu/nguon_tay/*.json.
 
-Mỗi tệp: {"ma", "ten", "url", "muc", "tinh_ma"?, "nam"?,
-          "dong": [{"ten_xa", "tinh_cu"?, "truong": {khoá: giá trị}, "trich_doan", "url"?}]}
+Mỗi tệp: {"ma", "ten", "url", "muc", "tinh_ma"?, "nam"?, "canh_bao"?,
+          "dong": [{"ten_xa", "ma_xa"?, "tinh_cu"?, "tinh_ma"?, "truong": {khoá: giá trị}, "trich_doan",
+                    "url"?, "nguon_ten"?, "nam"?, "canh_bao"?}]}
+Khoá của dòng ghi đè khoá cùng nghĩa của tệp (ten → nguon_ten). diem_tin suy từ muc + canh_bao
+(models.diem_theo_muc) — đây là lối ghi duy nhất cho dữ liệu tách tay, không ghi thẳng DB.
 Tên xã có thể là tên CŨ (trước 7/2025) — ghép qua Kho.ban_do_ma (tên cũ → xã mới) trong
 phạm vi tỉnh mới; tinh_cu giúp chọn tỉnh mới khi tệp gom nhiều tỉnh.
 """
@@ -15,7 +18,7 @@ from datetime import datetime
 from pathlib import Path
 
 from .. import cau_hinh
-from ..models import DAT, KetQua, Luot
+from ..models import DAT, KetQua, Luot, diem_theo_muc
 from ..store import DU_LIEU, Kho
 from ..text import chuan_hoa
 
@@ -60,7 +63,7 @@ def nap_tep(kho: Kho, p: Path) -> dict:
     khong_khop: list[str] = []
 
     for d in cfg.get("dong", []):
-        tinh = _tinh_moi(d.get("tinh_cu"), cfg.get("tinh_ma"))
+        tinh = d.get("tinh_ma") or _tinh_moi(d.get("tinh_cu"), cfg.get("tinh_ma"))
         if not tinh or not d.get("ten_xa"):
             khong_khop.append(d.get("ten_xa") or "(trống)")
             continue
@@ -86,7 +89,7 @@ def nap_tep(kho: Kho, p: Path) -> dict:
                 if len(ma_set) == 1:
                     dung_dau[tinh].setdefault(k, next(iter(ma_set)))
         ten_can = _BO_NGOAC.sub(" ", d["ten_xa"])   # nguồn hay ghi kèm "(Quận 1)"
-        ma = (dung_dau[tinh].get(_dau(d["ten_xa"])) or dung_dau[tinh].get(_dau(_BO_TIEN_TO.sub("", d["ten_xa"])))
+        ma = (d.get("ma_xa") if d.get("ma_xa") in ten_xa else None) or (dung_dau[tinh].get(_dau(d["ten_xa"])) or dung_dau[tinh].get(_dau(_BO_TIEN_TO.sub("", d["ten_xa"])))
               or dung_dau[tinh].get(_dau(ten_can)) or dung_dau[tinh].get(_dau(_BO_TIEN_TO.sub("", ten_can)))
               or Kho.tim_ma_xa(ban_do[tinh], d["ten_xa"]))
         if not ma:
@@ -96,7 +99,10 @@ def nap_tep(kho: Kho, p: Path) -> dict:
             if khoa not in kieu or gt in (None, "", [], {}):
                 continue
             o = gom.setdefault((ma, khoa), {"gia_tri": [] if kieu[khoa][0] in ("danh_sach", "ban_ghi") else None,
-                                           "trich": [], "url": d.get("url") or cfg["url"]})
+                                           "trich": [], "url": d.get("url") or cfg["url"],
+                                           "ten": d.get("nguon_ten") or cfg.get("ten") or cfg["ma"],
+                                           "nam": d.get("nam", cfg.get("nam")),
+                                           "canh_bao": d.get("canh_bao", cfg.get("canh_bao")) or []})
             if isinstance(o["gia_tri"], list):   # nhiều dòng cùng xã (vd nhiều di tích) → gộp
                 for x in (gt if isinstance(gt, list) else [gt]):
                     if x not in o["gia_tri"]:
@@ -108,13 +114,14 @@ def nap_tep(kho: Kho, p: Path) -> dict:
 
     luot = Luot(ma=f"tay-{cfg['ma']}-{datetime.now():%Y%m%d-%H%M%S}", pham_vi=cfg["ma"],
                 nhom_du_lieu="nguon_tay", bat_dau=datetime.now().isoformat(timespec="seconds"), nguon=[cfg["ma"]])
-    diem = {"A": 90, "B": 75}.get(cfg.get("muc"), 60)
     ket = [KetQua(
         don_vi_ma=ma, don_vi_ten=ten_xa.get(ma, ""), cap="xa", nhom=kieu[khoa][1], truong=khoa,
         gia_tri=o["gia_tri"], kieu=kieu[khoa][0],
-        nguon_ma=cfg["ma"], nguon_ten=cfg.get("ten") or cfg["ma"], nguon_url=o["url"],
-        nguon_muc=cfg.get("muc", "C"), trich_doan=" … ".join(o["trich"])[:600] or None,
-        diem_tin=diem, trang_thai=DAT, nam_du_lieu=cfg.get("nam"),
+        nguon_ma=cfg["ma"], nguon_ten=o["ten"], nguon_url=o["url"], nguon_muc=cfg.get("muc", "C"),
+        # một trích đoạn giữ nguyên; gộp nhiều dòng thì cắt 600 ký tự
+        trich_doan=(o["trich"][0] if len(o["trich"]) == 1 else " … ".join(o["trich"])[:600]) or None,
+        diem_tin=diem_theo_muc(cfg.get("muc"), o["canh_bao"]), trang_thai=DAT,
+        canh_bao=o["canh_bao"], nam_du_lieu=o["nam"],
     ) for (ma, khoa), o in gom.items()]
     kho.ghi_ket_qua(ket, luot.ma)
     luot.ket_thuc = datetime.now().isoformat(timespec="seconds")

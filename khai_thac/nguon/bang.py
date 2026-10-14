@@ -23,7 +23,7 @@ from pathlib import Path
 
 from .. import cau_hinh
 from ..http import goi, json_goi
-from ..models import DAT, KetQua, Luot
+from ..models import DAT, KetQua, Luot, diem_theo_muc
 from ..store import Kho
 from ..text import chuan_hoa
 
@@ -135,7 +135,7 @@ def nap(kho: Kho, cfg: dict, tinh_ma: str) -> dict:
                 gia_tri=gt, kieu=kieu.get(truong, "van_ban"),
                 nguon_ma=cfg["ma"], nguon_ten=cfg.get("ten") or cfg["ma"], nguon_url=url,
                 nguon_muc=cfg.get("muc", "C"), trich_doan=trich,
-                diem_tin={"A": 90, "B": 75}.get(cfg.get("muc"), 60), trang_thai=DAT,
+                diem_tin=diem_theo_muc(cfg.get("muc")), trang_thai=DAT,
                 nam_du_lieu=cfg.get("nam"),
             ))
     kho.ghi_ket_qua(ket, luot.ma)
