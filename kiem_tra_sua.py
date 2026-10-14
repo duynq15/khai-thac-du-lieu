@@ -148,3 +148,11 @@ _t = [("a", _n), ("b", _n + 60), ("c", _n + 120), ("d", _n - 86400 * 3), ("e", _
 assert chon_giu(_t, 2) == {"c", "b", "d"}
 assert chon_giu(_t, 10) == {"a", "b", "c", "d", "e"}
 print("OK don-sao-luu")
+
+from khai_thac.nguon.bang import gop_theo_xa
+_g = gop_theo_xa([("1", {"T": "Thôn A", "H": "120"}), ("1", {"T": "Thôn B", "H": "1.050"}),
+                  ("1", {"T": "Tổng", "H": "1170"}), ("2", {"T": "Tổ 1", "H": ""})],
+                 {"dem": "don_vi_truc_thuoc", "ten": "T"}, {"so_ho": "H"})
+assert [(m, t, v) for m, t, v, _ in _g] == [("1", "don_vi_truc_thuoc", 2), ("1", "so_ho", 1170), ("2", "don_vi_truc_thuoc", 1)], _g
+assert _g[0][3] == "2 dòng: Thôn A; Thôn B"
+print("OK gop thon")

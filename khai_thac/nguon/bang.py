@@ -13,6 +13,17 @@ xã (`khoa_xa`), cột nào là trường nào (`cot`). Không phải viết cod
       cot: {dien_tich_km2: area_km2, dan_so: population, tru_so: hq_address}
       nhom: hanh_chinh_dan_cu
       muc: A
+
+Danh sách thôn/tổ dân phố (mỗi dòng một thôn) → gộp theo xã với `gop`:
+
+    - ma: hn_ds_thon_2025
+      loai: bang
+      dinh_dang: pdf
+      url: https://.../danh-sach-thon-to-dan-pho.pdf
+      khoa_xa: {ten: "Xã, phường"}          # ô trống (gộp ô) lấy theo dòng trên
+      gop: {dem: don_vi_truc_thuoc, ten: "Tên thôn"}   # đếm dòng; `ten` để trích dẫn
+      cot: {so_ho: "Số hộ"}                 # cộng theo xã; thiếu một ô là bỏ cả xã
+      muc: A
 """
 
 from __future__ import annotations
@@ -76,7 +87,8 @@ def _dong_bang(cfg: dict, tinh_ma: str) -> list[dict]:
             f.write(r.content)
         bang = doc_bang(Path(f.name))
 
-    can = [chuan_hoa(c) for c in [*cfg["khoa_xa"].values(), *cfg["cot"].values()]]
+    cot_can = [*cfg["khoa_xa"].values(), *cfg["cot"].values(), *([cfg["gop"]["ten"]] if cfg.get("gop", {}).get("ten") else [])]
+    can = [chuan_hoa(c) for c in cot_can]
     dong: list[dict] = []
     for b in bang:
         rows = b["rows"]
@@ -86,10 +98,33 @@ def _dong_bang(cfg: dict, tinh_ma: str) -> list[dict]:
                 for r_ in rows[i + 1:]:
                     dong.append({c: next((r_[j] for j, t in enumerate(tieu_de) if chuan_hoa(c) in t
                                           and j < len(r_)), None)
-                                 for c in [*cfg["khoa_xa"].values(), *cfg["cot"].values()]})
+                                 for c in cot_can})
                 break
     return dong
 
+
+def gop_theo_xa(dong_xa: list[tuple[str, dict]], gop: dict, cot: dict) -> list[tuple[str, str, object, str]]:
+    """[(mã xã, dòng thôn)] → [(mã xã, trường, giá trị, trích)]: đếm dòng vào `gop['dem']`,
+    cộng các cột số trong `cot`. Thiếu số ở bất kỳ dòng nào thì không cộng (tổng thiếu là sai).
+
+    ponytail: dòng "Tổng"/"Cộng" mang tên xã sẽ bị đếm như một thôn; gặp nguồn như vậy thì
+    lọc trước bằng cột `ten` (bỏ dòng có tên bắt đầu "Tổng"/"Cộng") — đã làm bên dưới.
+    """
+    theo: dict[str, list[dict]] = {}
+    for ma, d in dong_xa:
+        if gop.get("ten") and chuan_hoa(str(d.get(gop["ten"]) or "")).startswith(("tong", "cong")):
+            continue
+        theo.setdefault(ma, []).append(d)
+    ra = []
+    for ma, ds in theo.items():
+        ten = "; ".join(str(d.get(gop["ten"])) for d in ds) if gop.get("ten") else ""
+        if gop.get("dem"):
+            ra.append((ma, gop["dem"], len(ds), (f"{len(ds)} dòng: {ten}" if ten else f"{len(ds)} dòng")[:600]))
+        for truong, c in cot.items():
+            so = [_so(d.get(c)) for d in ds]
+            if so and None not in so:
+                ra.append((ma, truong, sum(so), f"tổng {c}: " + " + ".join(str(d.get(c)) for d in ds)[:580]))
+    return ra
 
 def nap(kho: Kho, cfg: dict, tinh_ma: str) -> dict:
     """Chạy một nguồn `bang` cho một tỉnh. Trả {'so_xa', 'so_truong', 'khong_khop'}."""
@@ -107,13 +142,35 @@ def nap(kho: Kho, cfg: dict, tinh_ma: str) -> dict:
     ket: list[KetQua] = []
     khong_khop: list[str] = []
     url = cfg["url"].format(tinh_ma=tinh_ma)
+
+    def _kq(ma, truong, gt, trich):
+        return KetQua(
+            don_vi_ma=ma, don_vi_ten=xa[ma]["ten"], cap="xa",
+            nhom=cfg.get("nhom") or nhom_cua.get(truong, "khac"), truong=truong,
+            gia_tri=gt, kieu=kieu.get(truong, "van_ban"),
+            nguon_ma=cfg["ma"], nguon_ten=cfg.get("ten") or cfg["ma"], nguon_url=url,
+            nguon_muc=cfg.get("muc", "C"), trich_doan=trich,
+            diem_tin=diem_theo_muc(cfg.get("muc")), trang_thai=DAT,
+            nam_du_lieu=cfg.get("nam"),
+        )
+
+    gop = cfg.get("gop")
+    khoa_cot = next(iter(cfg["khoa_xa"].values()))
+    dong_xa: list[tuple[str, dict]] = []
+    truoc = None
     for d in dong:
+        if gop:  # ô tên xã gộp (rowspan) → lấy theo dòng trên
+            d = d if d.get(khoa_cot) else {**d, khoa_cot: truoc}
+            truoc = d.get(khoa_cot)
         if "ma" in cfg["khoa_xa"]:
             ma = str(d.get(cfg["khoa_xa"]["ma"]) or "").zfill(5)
         else:
             ma = Kho.tim_ma_xa(bd, d.get(cfg["khoa_xa"]["ten"]) or "")
         if ma not in xa:
-            khong_khop.append(str(d.get(next(iter(cfg["khoa_xa"].values())))))
+            khong_khop.append(str(d.get(khoa_cot)))
+            continue
+        if gop:
+            dong_xa.append((ma, d))
             continue
         for truong, cot in cfg["cot"].items():
             if isinstance(cot, (list, tuple)):   # nhiều cột → một trường toa_do {lat, lon}
@@ -129,15 +186,9 @@ def nap(kho: Kho, cfg: dict, tinh_ma: str) -> dict:
                 trich = f"{', '.join(cot)} = {gt['lat']}, {gt['lon']}"
             else:
                 trich = f"{cot} = {d.get(cot)}"
-            ket.append(KetQua(
-                don_vi_ma=ma, don_vi_ten=xa[ma]["ten"], cap="xa",
-                nhom=cfg.get("nhom") or nhom_cua.get(truong, "khac"), truong=truong,
-                gia_tri=gt, kieu=kieu.get(truong, "van_ban"),
-                nguon_ma=cfg["ma"], nguon_ten=cfg.get("ten") or cfg["ma"], nguon_url=url,
-                nguon_muc=cfg.get("muc", "C"), trich_doan=trich,
-                diem_tin=diem_theo_muc(cfg.get("muc")), trang_thai=DAT,
-                nam_du_lieu=cfg.get("nam"),
-            ))
+            ket.append(_kq(ma, truong, gt, trich))
+    if gop:
+        ket += [_kq(*x) for x in gop_theo_xa(dong_xa, gop, cfg["cot"])]
     kho.ghi_ket_qua(ket, luot.ma)
     luot.ket_thuc = datetime.now().isoformat(timespec="seconds")
     luot.so_don_vi = len({k.don_vi_ma for k in ket})
