@@ -173,6 +173,8 @@ duyệt trên web-admin trước khi vào bảng nghiệp vụ.
 
 Sau mỗi lần `khai-thac xuat`, chạy `khai-thac kiem-xuat` để so từng ô JSON ↔ Excel
 (mã thoát 1 nếu lệch). Script một lần đã dùng để ghi dữ liệu: xem `scripts/README.md`.
+Sao lưu DB (`du_lieu/sao_luu`) dọn bằng `khai-thac don-sao-luu` (giữ 10 bản mới nhất + 1 bản/ngày;
+chỉ liệt kê, thêm `--xoa` mới xoá).
 
 ## Danh mục tới đâu?
 

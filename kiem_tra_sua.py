@@ -141,3 +141,10 @@ from khai_thac.models import diem_theo_muc
 assert (diem_theo_muc("A"), diem_theo_muc("B"), diem_theo_muc("C"), diem_theo_muc(None)) == (90, 75, 60, 60)
 assert diem_theo_muc("B", ["chung toàn TP"]) == 65 and diem_theo_muc("A", []) == 90
 print("OK diem_theo_muc")
+
+from khai_thac.cli import chon_giu
+_n = 1_760_000_000  # 15:53 giờ VN, a/b/c cùng ngày; d/e lùi 3 ngày
+_t = [("a", _n), ("b", _n + 60), ("c", _n + 120), ("d", _n - 86400 * 3), ("e", _n - 86400 * 3 - 60)]
+assert chon_giu(_t, 2) == {"c", "b", "d"}
+assert chon_giu(_t, 10) == {"a", "b", "c", "d", "e"}
+print("OK don-sao-luu")

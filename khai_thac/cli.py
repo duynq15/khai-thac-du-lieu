@@ -166,6 +166,35 @@ def cmd_kiem_xuat(args) -> int:
     return 1 if vd or dem.get("thiếu dòng nguồn") or dem.get("json rỗng, excel có") else 0
 
 
+def chon_giu(tep: list[tuple[str, float]], so_moi: int = 10) -> set[str]:
+    """Giữ `so_moi` bản mới nhất + bản mới nhất của mỗi ngày (theo mtime)."""
+    from datetime import date
+
+    tep = sorted(tep, key=lambda x: -x[1])
+    giu = {t for t, _ in tep[:so_moi]}
+    ngay: dict = {}
+    for t, m in tep:
+        ngay.setdefault(date.fromtimestamp(m), t)
+    return giu | set(ngay.values())
+
+
+def cmd_don_sao_luu(args) -> int:
+    """Dọn du_lieu/sao_luu: mặc định chỉ in danh sách, --xoa mới xoá."""
+    from pathlib import Path
+
+    thu_muc = Path(args.thu_muc)
+    tep = {p.name: p for p in thu_muc.glob("*.sqlite")}
+    giu = chon_giu([(t, p.stat().st_mtime) for t, p in tep.items()], args.giu)
+    bo = sorted(set(tep) - giu)
+    mb = sum(tep[t].stat().st_size for t in bo) / 2**20
+    for t in bo:
+        print(("xoá " if args.xoa else "sẽ xoá ") + t)
+        if args.xoa:
+            tep[t].unlink()
+    print(f"giữ {len(giu)}, {'đã xoá' if args.xoa else 'sẽ xoá'} {len(bo)} ({mb:.0f} MB)")
+    return 0
+
+
 def cmd_thon(args) -> int:
     kho = _kho(args)
     if not args.ten and not args.ma and not args.tinh:
@@ -442,6 +471,12 @@ def tao_parser() -> argparse.ArgumentParser:
 
     kx = sub.add_parser("kiem-xuat", help="So khớp từng ô JSON ↔ Excel bàn giao mới nhất")
     kx.set_defaults(fn=cmd_kiem_xuat)
+
+    ds = sub.add_parser("don-sao-luu", help="Giữ N bản sao lưu mới nhất + 1 bản/ngày (mặc định chỉ liệt kê)")
+    ds.add_argument("--thu-muc", dest="thu_muc", default="du_lieu/sao_luu")
+    ds.add_argument("--giu", type=int, default=10, help="Số bản mới nhất luôn giữ")
+    ds.add_argument("--xoa", action="store_true", help="Xoá thật (không có cờ này chỉ in)")
+    ds.set_defaults(fn=cmd_don_sao_luu)
 
     t = sub.add_parser("trang-thai", help="Kiểm tra LLM/Ollama")
     t.set_defaults(fn=cmd_trang_thai)
